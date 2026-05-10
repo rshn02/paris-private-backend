@@ -16,7 +16,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 app.use(express.json());
 
 app.use(cors({
-    origin: "http://localhost:5500",
+    origin: "lambent-praline-f14246.netlify.app",
     credentials: true
 }));
 
@@ -26,8 +26,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false // true en production HTTPS
+    secure: true,
+    sameSite: "none"
 }
 }));
 
