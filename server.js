@@ -16,6 +16,7 @@ app.use(express.json());
 app.use(cors({
   origin: [
     "http://localhost:5500",
+    "http://127.0.0.1:5500",
     "https://parisprivateairporttransfer.com",
     "https://www.parisprivateairporttransfer.com",
     process.env.CLIENT_URL
@@ -23,20 +24,15 @@ app.use(cors({
   credentials: true
 }));
 
-app.get("/", (req, res) => {
-  res.json({
+app.get("/health", (req, res) => {
+  res.status(200).json({
     success: true,
-    message: "Paris Private Airport Transfer API is running."
+    message: "OK"
   });
 });
 
-app.use("/api/bookings", bookingRoutes);
-app.use("/api/confirm", confirmRoutes);
-app.use("/api/manage", manageRoutes);
-app.use("/api/contact", contactRoutes);
-
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
