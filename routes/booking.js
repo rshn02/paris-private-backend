@@ -180,7 +180,7 @@ const clientEmail = await resend.emails.send({
   }
 });
 
-console.log("CLIENT EMAIL :", clientEmail);
+console.log("CLIENT EMAIL :", JSON.stringify(clientEmail, null, 2));
 
 const adminEmail = await resend.emails.send({
   from: FROM_EMAIL,
@@ -195,7 +195,7 @@ const adminEmail = await resend.emails.send({
 
 
 
-console.log("ADMIN EMAIL :", adminEmail);
+console.log("ADMIN EMAIL :", JSON.stringify(adminEmail, null, 2));
     await supabase
       .from("bookings")
       .update({ last_email_sent: new Date().toISOString() })
