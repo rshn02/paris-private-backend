@@ -24,12 +24,24 @@ app.use(cors({
   credentials: true
 }));
 
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Paris Private Airport Transfer API is running."
+  });
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "OK"
   });
 });
+
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/confirm", confirmRoutes);
+app.use("/api/manage", manageRoutes);
+app.use("/api/contact", contactRoutes);
 
 const PORT = process.env.PORT || 3000;
 
