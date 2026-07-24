@@ -1,11 +1,19 @@
-export function generateReference() {
-  const now = new Date();
+export async function generateReference(supabase) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("booking_number")
+    .order("created_at", { ascending: false })
+    .limit(200);
 
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+  if (error) {
+    throw error;
+  }
 
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const lastNumericRef = (data || [])
+    .map((row) => String(row.booking_number || "").trim())
+    .find((ref) => /^\d+$/.test(ref));
 
-  return `PPAT-${year}${month}${day}-${random}`;
+  const nextNumber = (lastNumericRef ? Number(lastNumericRef) : 1999) + 1;
+
+  return String(nextNumber);
 }

@@ -19,7 +19,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const bookingNumber = generateReference();
+    const bookingNumber = await generateReference(supabase);
     const confirmToken = generateToken();
     const confirmUrl = `${process.env.CLIENT_URL}/confirm.html?token=${confirmToken}`;
 
