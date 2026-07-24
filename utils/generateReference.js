@@ -9,11 +9,12 @@ export async function generateReference(supabase) {
     throw error;
   }
 
-  const lastNumericRef = (data || [])
+  const lastRef = (data || [])
     .map((row) => String(row.booking_number || "").trim())
-    .find((ref) => /^\d+$/.test(ref));
+    .find((ref) => /^PPAT-\d+$/.test(ref));
 
-  const nextNumber = (lastNumericRef ? Number(lastNumericRef) : 1999) + 1;
+  const lastNumber = lastRef ? Number(lastRef.replace("PPAT-", "")) : 1999;
+  const nextNumber = lastNumber + 1;
 
-  return String(nextNumber);
+  return `PPAT-${nextNumber}`;
 }
