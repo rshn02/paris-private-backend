@@ -1,6 +1,7 @@
 import express from "express";
 import { supabase } from "../config/supabase.js";
 import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import { createBookingCalendarEvents } from "../utils/calendar.js";
 
 const router = express.Router();
 
@@ -65,6 +66,28 @@ router.post("/", async (req, res) => {
       });
     }
 
+    let calendarIds = {
+      outboundEventId: null,
+      returnEventId: null
+    };
+
+    try {
+      calendarIds = await createBookingCalendarEvents(updatedBooking);
+    } catch (calendarError) {
+      console.error("GOOGLE CALENDAR ERROR:", calendarError);
+    }
+
+    const { error: calendarUpdateError } = await supabase
+      .from("bookings")
+      .update({
+        google_event_outbound_id: calendarIds.outboundEventId,
+        google_event_return_id: calendarIds.returnEventId
+      })
+      .eq("id", updatedBooking.id);
+
+    if (calendarUpdateError) {
+      console.error("GOOGLE CALENDAR IDS SAVE ERROR:", calendarUpdateError);
+    }
 
     const basePrice = Number(updatedBooking.original_price || 0);
     const totalPrice = Number(updatedBooking.price || 0);
