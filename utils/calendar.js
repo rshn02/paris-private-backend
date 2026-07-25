@@ -12,10 +12,53 @@ function getCalendarClient() {
   return google.calendar({ version: "v3", auth });
 }
 
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+
+function normalizeDatePart(value) {
+  if (!value) {
+    throw new Error("Missing booking date for Google Calendar event.");
+  }
+
+  return String(value).split("T")[0];
+}
+
+function normalizeTimePart(value) {
+  if (!value) {
+    throw new Error("Missing booking time for Google Calendar event.");
+  }
+
+  const time = String(value).trim().split(".")[0];
+  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+  if (!match) {
+    throw new Error(`Invalid booking time format for Google Calendar: ${value}`);
+  }
+
+  const [, hours, minutes, seconds = "00"] = match;
+  return `${pad(hours)}:${minutes}:${seconds}`;
+}
+
+function buildDateTime(dateStr, timeStr) {
+  return `${normalizeDatePart(dateStr)}T${normalizeTimePart(timeStr)}`;
+}
+
 function addHours(dateStr, timeStr, hours = 2) {
-  const start = new Date(`${dateStr}T${timeStr}:00`);
+  const start = new Date(buildDateTime(dateStr, timeStr));
+
+  if (Number.isNaN(start.getTime())) {
+    throw new Error(
+      `Invalid booking date/time for Google Calendar: ${dateStr} ${timeStr}`
+    );
+  }
+
   const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
-  return end.toISOString();
+
+  return [
+    `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`,
+    `${pad(end.getHours())}:${pad(end.getMinutes())}:${pad(end.getSeconds())}`,
+  ].join("T");
 }
 
 function buildDescription(booking, leg = "outbound") {
@@ -68,13 +111,14 @@ function buildSummary(booking, leg = "outbound") {
 export async function createBookingCalendarEvents(booking) {
   const calendar = getCalendarClient();
   const calendarId = process.env.GOOGLE_CALENDAR_ID;
+  const outboundStart = buildDateTime(booking.booking_date, booking.booking_time);
 
   const outboundEvent = {
     summary: buildSummary(booking, "outbound"),
     location: booking.pickup_location || "",
     description: buildDescription(booking, "outbound"),
     start: {
-      dateTime: `${booking.booking_date}T${booking.booking_time}:00`,
+      dateTime: outboundStart,
       timeZone: "Europe/Paris",
     },
     end: {
@@ -95,12 +139,14 @@ export async function createBookingCalendarEvents(booking) {
     booking.return_date &&
     booking.return_time
   ) {
+    const returnStart = buildDateTime(booking.return_date, booking.return_time);
+
     const returnEvent = {
       summary: buildSummary(booking, "return"),
       location: booking.destination || "",
       description: buildDescription(booking, "return"),
       start: {
-        dateTime: `${booking.return_date}T${booking.return_time}:00`,
+        dateTime: returnStart,
         timeZone: "Europe/Paris",
       },
       end: {
