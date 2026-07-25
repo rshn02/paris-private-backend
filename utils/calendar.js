@@ -12,6 +12,22 @@ function getCalendarClient() {
   return google.calendar({ version: "v3", auth });
 }
 
+const CALENDAR_TIME_ZONE = "Europe/Paris";
+
+const STATUS_LABELS = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  modified: "Modified",
+  cancelled: "Cancelled"
+};
+
+const STATUS_COLOR_IDS = {
+  pending: "5",
+  confirmed: "10",
+  modified: "1",
+  cancelled: "11"
+};
+
 function pad(value) {
   return String(value).padStart(2, "0");
 }
@@ -67,9 +83,11 @@ function buildDescription(booking, leg = "outbound") {
   const destination = isReturn ? booking.pickup_location : booking.destination;
   const date = isReturn ? booking.return_date : booking.booking_date;
   const time = isReturn ? booking.return_time : booking.booking_time;
+  const statusLabel = STATUS_LABELS[booking.status] || "Pending";
 
   return [
     `Reference: ${booking.booking_number || ""}`,
+    `Status: ${statusLabel}`,
     `Trip type: ${booking.trip_type || "one_way"}`,
     `Leg: ${isReturn ? "Return" : "Outbound"}`,
     `Client: ${booking.customer_name || ""}`,
@@ -98,71 +116,139 @@ function buildSummary(booking, leg = "outbound") {
   const isReturn = leg === "return";
   const pickup = isReturn ? booking.destination : booking.pickup_location;
   const destination = isReturn ? booking.pickup_location : booking.destination;
+  const statusLabel = STATUS_LABELS[booking.status] || "Pending";
 
   if (!isRoundTrip) {
-    return `${booking.booking_number} • One Way • ${pickup} → ${destination}`;
+    return `${booking.booking_number} • ${statusLabel} • One Way • ${pickup} → ${destination}`;
   }
 
-  return `${booking.booking_number} • ${
+  return `${booking.booking_number} • ${statusLabel} • ${
     isReturn ? "Round Trip - Return" : "Round Trip - Outbound"
   } • ${pickup} → ${destination}`;
 }
 
-export async function createBookingCalendarEvents(booking) {
-  const calendar = getCalendarClient();
+function getCalendarId() {
   const calendarId = process.env.GOOGLE_CALENDAR_ID;
-  const outboundStart = buildDateTime(booking.booking_date, booking.booking_time);
 
-  const outboundEvent = {
-    summary: buildSummary(booking, "outbound"),
-    location: booking.pickup_location || "",
-    description: buildDescription(booking, "outbound"),
-    start: {
-      dateTime: outboundStart,
-      timeZone: "Europe/Paris",
-    },
-    end: {
-      dateTime: addHours(booking.booking_date, booking.booking_time, 2),
-      timeZone: "Europe/Paris",
-    },
-  };
-
-  const outboundResponse = await calendar.events.insert({
-    calendarId,
-    resource: outboundEvent,
-  });
-
-  let returnResponse = null;
-
-  if (
-    booking.trip_type === "round_trip" &&
-    booking.return_date &&
-    booking.return_time
-  ) {
-    const returnStart = buildDateTime(booking.return_date, booking.return_time);
-
-    const returnEvent = {
-      summary: buildSummary(booking, "return"),
-      location: booking.destination || "",
-      description: buildDescription(booking, "return"),
-      start: {
-        dateTime: returnStart,
-        timeZone: "Europe/Paris",
-      },
-      end: {
-        dateTime: addHours(booking.return_date, booking.return_time, 2),
-        timeZone: "Europe/Paris",
-      },
-    };
-
-    returnResponse = await calendar.events.insert({
-      calendarId,
-      resource: returnEvent,
-    });
+  if (!calendarId) {
+    throw new Error("Missing GOOGLE_CALENDAR_ID environment variable.");
   }
 
+  return calendarId;
+}
+
+function buildEventResource(booking, leg = "outbound") {
+  const isReturn = leg === "return";
+  const date = isReturn ? booking.return_date : booking.booking_date;
+  const time = isReturn ? booking.return_time : booking.booking_time;
+  const location = isReturn ? booking.destination : booking.pickup_location;
+
   return {
-    outboundEventId: outboundResponse.data.id,
-    returnEventId: returnResponse?.data?.id || null,
+    summary: buildSummary(booking, leg),
+    location: location || "",
+    description: buildDescription(booking, leg),
+    colorId: STATUS_COLOR_IDS[booking.status] || STATUS_COLOR_IDS.pending,
+    start: {
+      dateTime: buildDateTime(date, time),
+      timeZone: CALENDAR_TIME_ZONE
+    },
+    end: {
+      dateTime: addHours(date, time, 2),
+      timeZone: CALENDAR_TIME_ZONE
+    }
   };
 }
+
+async function upsertEvent(calendar, calendarId, eventId, resource) {
+  if (eventId) {
+    const response = await calendar.events.update({
+      calendarId,
+      eventId,
+      resource
+    });
+
+    return response.data.id;
+  }
+
+  const response = await calendar.events.insert({
+    calendarId,
+    resource
+  });
+
+  return response.data.id;
+}
+
+async function deleteEvent(calendar, calendarId, eventId) {
+  if (!eventId) {
+    return;
+  }
+
+  try {
+    await calendar.events.delete({
+      calendarId,
+      eventId
+    });
+  } catch (error) {
+    if (error?.code !== 404) {
+      throw error;
+    }
+  }
+}
+
+export async function syncBookingCalendarEvents(booking) {
+  const calendar = getCalendarClient();
+  const calendarId = getCalendarId();
+
+  console.log("GOOGLE CALENDAR SYNC START:", {
+    calendarId,
+    bookingNumber: booking.booking_number,
+    status: booking.status,
+    tripType: booking.trip_type,
+    outboundDate: booking.booking_date,
+    outboundTime: booking.booking_time,
+    returnDate: booking.return_date,
+    returnTime: booking.return_time,
+    existingOutboundEventId: booking.google_event_outbound_id || null,
+    existingReturnEventId: booking.google_event_return_id || null
+  });
+
+  const outboundEventId = await upsertEvent(
+    calendar,
+    calendarId,
+    booking.google_event_outbound_id,
+    buildEventResource(booking, "outbound")
+  );
+
+  let returnEventId = booking.google_event_return_id || null;
+  const hasReturnLeg =
+    booking.trip_type === "round_trip" &&
+    booking.return_date &&
+    booking.return_time;
+
+  if (hasReturnLeg) {
+    returnEventId = await upsertEvent(
+      calendar,
+      calendarId,
+      booking.google_event_return_id,
+      buildEventResource(booking, "return")
+    );
+  } else if (booking.google_event_return_id) {
+    await deleteEvent(calendar, calendarId, booking.google_event_return_id);
+    returnEventId = null;
+  }
+  
+  console.log("GOOGLE CALENDAR SYNC OK:", {
+    calendarId,
+    bookingNumber: booking.booking_number,
+    outboundEventId,
+    returnEventId
+  });
+
+
+  return {
+    outboundEventId,
+    returnEventId
+  };
+}
+
+export const createBookingCalendarEvents = syncBookingCalendarEvents;

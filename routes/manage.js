@@ -1,6 +1,7 @@
 import express from "express";
 import { supabase } from "../config/supabase.js";
 import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import { syncBookingCalendarEvents } from "../utils/calendar.js";
 
 const router = express.Router();
 
@@ -335,6 +336,36 @@ router.post("/modify", async (req, res) => {
       });
     }
 
+    try {
+      const calendarIds = await syncBookingCalendarEvents(updatedBooking);
+
+      console.log("MODIFY CALENDAR IDS:", {
+        bookingId: updatedBooking.id,
+        bookingNumber: updatedBooking.booking_number,
+        ...calendarIds
+      });
+
+      const { error: calendarUpdateError } = await supabase
+        .from("bookings")
+        .update({
+          google_event_outbound_id: calendarIds.outboundEventId,
+          google_event_return_id: calendarIds.returnEventId
+        })
+        .eq("id", updatedBooking.id);
+
+      if (calendarUpdateError) {
+        console.error("GOOGLE CALENDAR IDS SAVE ERROR:", calendarUpdateError);
+      }
+    } catch (calendarError) {
+      console.error("GOOGLE CALENDAR ERROR:", {
+        message: calendarError?.message,
+        code: calendarError?.code,
+        errors: calendarError?.errors,
+        response: calendarError?.response?.data,
+        stack: calendarError?.stack
+      });
+    }
+
     const emailData = buildEmailData(updatedBooking);
     const templateAlias = process.env.RESEND_TEMPLATE_MODIFIED;
 
@@ -441,6 +472,36 @@ router.post("/cancel", async (req, res) => {
       return res.status(500).json({
         success: false,
         message: "Booking could not be cancelled."
+      });
+    }
+
+    try {
+      const calendarIds = await syncBookingCalendarEvents(updatedBooking);
+
+      console.log("CANCEL CALENDAR IDS:", {
+        bookingId: updatedBooking.id,
+        bookingNumber: updatedBooking.booking_number,
+        ...calendarIds
+      });
+
+      const { error: calendarUpdateError } = await supabase
+        .from("bookings")
+        .update({
+          google_event_outbound_id: calendarIds.outboundEventId,
+          google_event_return_id: calendarIds.returnEventId
+        })
+        .eq("id", updatedBooking.id);
+
+      if (calendarUpdateError) {
+        console.error("GOOGLE CALENDAR IDS SAVE ERROR:", calendarUpdateError);
+      }
+    } catch (calendarError) {
+      console.error("GOOGLE CALENDAR ERROR:", {
+        message: calendarError?.message,
+        code: calendarError?.code,
+        errors: calendarError?.errors,
+        response: calendarError?.response?.data,
+        stack: calendarError?.stack
       });
     }
 

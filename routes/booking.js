@@ -3,6 +3,7 @@ import { supabase } from "../config/supabase.js";
 import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
 import { generateReference } from "../utils/generateReference.js";
 import { generateToken } from "../utils/generateToken.js";
+import { syncBookingCalendarEvents } from "../utils/calendar.js";
 import { validateBookingData } from "../middleware/validation.js";
 
 const router = express.Router();
@@ -72,6 +73,36 @@ router.post("/", async (req, res) => {
       return res.status(500).json({
         success: false,
         message: "Booking could not be saved."
+      });
+    }
+
+    try {
+      const calendarIds = await syncBookingCalendarEvents(booking);
+
+      console.log("BOOKING CALENDAR IDS:", {
+        bookingId: booking.id,
+        bookingNumber: booking.booking_number,
+        ...calendarIds
+      });
+
+      const { error: calendarUpdateError } = await supabase
+        .from("bookings")
+        .update({
+          google_event_outbound_id: calendarIds.outboundEventId,
+          google_event_return_id: calendarIds.returnEventId
+        })
+        .eq("id", booking.id);
+
+      if (calendarUpdateError) {
+        console.error("GOOGLE CALENDAR IDS SAVE ERROR:", calendarUpdateError);
+      }
+    } catch (calendarError) {
+      console.error("GOOGLE CALENDAR ERROR:", {
+        message: calendarError?.message,
+        code: calendarError?.code,
+        errors: calendarError?.errors,
+        response: calendarError?.response?.data,
+        stack: calendarError?.stack
       });
     }
 

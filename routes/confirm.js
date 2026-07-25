@@ -1,7 +1,7 @@
 import express from "express";
 import { supabase } from "../config/supabase.js";
 import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
-import { createBookingCalendarEvents } from "../utils/calendar.js";
+import { syncBookingCalendarEvents } from "../utils/calendar.js";
 
 const router = express.Router();
 
@@ -72,9 +72,21 @@ router.post("/", async (req, res) => {
     };
 
     try {
-      calendarIds = await createBookingCalendarEvents(updatedBooking);
+      calendarIds = await syncBookingCalendarEvents(updatedBooking);
+
+      console.log("CONFIRM CALENDAR IDS:", {
+        bookingId: updatedBooking.id,
+        bookingNumber: updatedBooking.booking_number,
+        ...calendarIds
+      });
     } catch (calendarError) {
-      console.error("GOOGLE CALENDAR ERROR:", calendarError);
+      console.error("GOOGLE CALENDAR ERROR:", {
+        message: calendarError?.message,
+        code: calendarError?.code,
+        errors: calendarError?.errors,
+        response: calendarError?.response?.data,
+        stack: calendarError?.stack
+      });
     }
 
     const { error: calendarUpdateError } = await supabase
