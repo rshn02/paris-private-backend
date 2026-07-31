@@ -3,16 +3,46 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL?.trim();
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY?.trim();
+function normalizeEnvValue(value) {
+  if (!value) {
+    return value;
+  }
+
+  const trimmed = value.trim();
+
+  if (
+    (trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
+const supabaseUrl = normalizeEnvValue(process.env.SUPABASE_URL);
+const supabaseServiceKey = normalizeEnvValue(
+  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY
+);
 
 if (!supabaseUrl) {
   throw new Error("Missing SUPABASE_URL environment variable.");
 }
 
 if (!supabaseServiceKey) {
-  throw new Error("Missing SUPABASE_SERVICE_KEY environment variable.");
+  throw new Error(
+    "Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_KEY environment variable."
+  );
 }
+
+console.log("SUPABASE CONFIG:", {
+  url: supabaseUrl,
+  keyPrefix: supabaseServiceKey.slice(0, 10),
+  keyLength: supabaseServiceKey.length,
+  keySource: process.env.SUPABASE_SECRET_KEY
+    ? "SUPABASE_SECRET_KEY"
+    : "SUPABASE_SERVICE_KEY"
+});
 
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
