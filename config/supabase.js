@@ -22,7 +22,9 @@ function normalizeEnvValue(value) {
 
 const supabaseUrl = normalizeEnvValue(process.env.SUPABASE_URL);
 const supabaseServiceKey = normalizeEnvValue(
-  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 if (!supabaseUrl) {
@@ -31,7 +33,7 @@ if (!supabaseUrl) {
 
 if (!supabaseServiceKey) {
   throw new Error(
-    "Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_KEY environment variable."
+    "Missing SUPABASE_SECRET_KEY, SUPABASE_SERVICE_KEY, or SUPABASE_SERVICE_ROLE_KEY environment variable."
   );
 }
 
@@ -41,12 +43,15 @@ console.log("SUPABASE CONFIG:", {
   keyLength: supabaseServiceKey.length,
   keySource: process.env.SUPABASE_SECRET_KEY
     ? "SUPABASE_SECRET_KEY"
-    : "SUPABASE_SERVICE_KEY"
+    : process.env.SUPABASE_SERVICE_KEY
+      ? "SUPABASE_SERVICE_KEY"
+      : "SUPABASE_SERVICE_ROLE_KEY"
 });
 
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     persistSession: false,
-    autoRefreshToken: false
+    autoRefreshToken: false,
+    detectSessionInUrl: false
   }
 });
