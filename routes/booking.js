@@ -11,7 +11,6 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   try {
     const data = req.body;
-    console.log("BOOKING REQUEST START");
     const missing = validateBookingData(data);
 
     if (missing.length > 0) {
@@ -21,9 +20,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    console.log("BOOKING STEP: generate reference");
     const bookingNumber = await generateReference(supabase);
-    console.log("BOOKING STEP OK: generate reference");
     const confirmToken = generateToken();
     const confirmUrl = `${process.env.CLIENT_URL}/confirm.html?token=${confirmToken}`;
 
@@ -65,7 +62,6 @@ router.post("/", async (req, res) => {
       
     };
 
-    console.log("BOOKING STEP: insert booking");
     const { data: booking, error } = await supabase
       .from("bookings")
       .insert(bookingPayload)
@@ -79,9 +75,6 @@ router.post("/", async (req, res) => {
         message: "Booking could not be saved."
       });
     }
-
-    console.log("BOOKING STEP OK: insert booking");
-
     try {
       const calendarIds = await syncBookingCalendarEvents(booking);
 
