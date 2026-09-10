@@ -1,5 +1,10 @@
 import express from "express";
 import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import {
+  cleanMarketingService,
+  formatInternalMarketingAttribution,
+  sanitizeMarketingAttribution
+} from "../utils/marketingAttribution.js";
 
 const router = express.Router();
 
@@ -21,7 +26,16 @@ function subjectLabel(value) {
 
 router.post("/", async (req, res) => {
   try {
-    const { name, email, phone, subject, message, website } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      website,
+      service,
+      marketing_attribution
+    } = req.body;
 
     if (website) {
       return res.json({ success: true });
@@ -44,6 +58,16 @@ router.post("/", async (req, res) => {
       reply_to: email
     };
 
+    const sanitizedAttribution = sanitizeMarketingAttribution(marketing_attribution);
+    const sanitizedService = cleanMarketingService(service);
+    const attributionSummary = formatInternalMarketingAttribution(
+      sanitizedAttribution,
+      sanitizedService
+    );
+    const adminData = attributionSummary
+      ? { ...data, message: `${data.message}\n\n---\n${attributionSummary}` }
+      : data;
+
     const templateId = process.env.RESEND_TEMPLATE_CONTACT;
 
 if (!templateId) {
@@ -57,9 +81,14 @@ const adminEmail = await resend.emails.send({
   subject: `New Contact Request • ${data.subject}`,
   template: {
     id: templateId,
-    variables: data
+    variables: adminData
   }
 });
+
+if (adminEmail?.error) {
+  console.error("CONTACT ADMIN EMAIL ERROR:", adminEmail.error);
+  throw new Error("Contact message could not be delivered.");
+}
 
 console.log("CONTACT ADMIN EMAIL:", adminEmail);
 
@@ -73,6 +102,11 @@ const clientEmail = await resend.emails.send({
     variables: data
   }
 });
+
+if (clientEmail?.error) {
+  console.error("CONTACT CLIENT EMAIL ERROR:", clientEmail.error);
+  throw new Error("Contact acknowledgement could not be delivered.");
+}
 
 console.log("CONTACT CLIENT EMAIL:", clientEmail);
 

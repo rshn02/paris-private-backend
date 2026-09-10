@@ -34,6 +34,21 @@ function required(value) {
   return value !== undefined && value !== null && String(value).trim() !== "";
 }
 
+// Internal admin metadata must never be returned by the customer-facing flow.
+function customerBookingView(booking) {
+  const {
+    confirm_token,
+    internal_note,
+    internal_reference,
+    calculated_price,
+    price_override,
+    override_reason,
+    admin_user_id,
+    ...customerBooking
+  } = booking;
+  return customerBooking;
+}
+
 function isNightTime(time) {
   if (!time) return false;
   const hour = Number(String(time).split(":")[0]);
@@ -192,7 +207,7 @@ router.post("/find", async (req, res) => {
       });
     }
 
-    return res.json({ success: true, booking });
+    return res.json({ success: true, booking: customerBookingView(booking) });
 
   } catch (error) {
     console.error("Find booking error:", error);
@@ -407,7 +422,7 @@ router.post("/modify", async (req, res) => {
     return res.json({
       success: true,
       message: "Booking modified successfully.",
-      booking: updatedBooking,
+      booking: customerBookingView(updatedBooking),
       price
     });
 
@@ -450,7 +465,7 @@ router.post("/cancel", async (req, res) => {
       return res.json({
         success: true,
         message: "Booking already cancelled.",
-        booking
+        booking: customerBookingView(booking)
       });
     }
 
@@ -546,7 +561,7 @@ router.post("/cancel", async (req, res) => {
     return res.json({
       success: true,
       message: "Booking cancelled successfully.",
-      booking: updatedBooking
+      booking: customerBookingView(updatedBooking)
     });
 
   } catch (error) {

@@ -6,6 +6,7 @@ import bookingRoutes from "./routes/booking.js";
 import confirmRoutes from "./routes/confirm.js";
 import manageRoutes from "./routes/manage.js";
 import contactRoutes from "./routes/contact.js";
+import adminRoutes from "./routes/admin.js";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/confirm", confirmRoutes);
 app.use("/api/manage", manageRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 

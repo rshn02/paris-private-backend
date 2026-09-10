@@ -5,13 +5,81 @@ import { generateReference } from "../utils/generateReference.js";
 import { generateToken } from "../utils/generateToken.js";
 import { syncBookingCalendarEvents } from "../utils/calendar.js";
 import { validateBookingData } from "../middleware/validation.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
+import { calculateAdminFinalPrice, calculatePublicBookingPrice, calculateBookingPrice, isSupportedService } from "../utils/pricing.js";
+import { sanitizeMarketingAttribution } from "../utils/marketingAttribution.js";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+function cleanAdminText(value, maxLength) {
+  const text = String(value || "").trim();
+  if (text.length > maxLength) throw new Error("An admin text field is too long.");
+  return text || null;
+}
+
+function applyServerPricing(allowAdminOverrides) {
+  return (req, res, next) => {
+    try {
+      const data = req.body || {};
+      const serviceType = String(data.service_type || "").trim();
+      const tripType = data.trip_type === "round_trip" ? "round_trip" : "one_way";
+
+      if (!isSupportedService(serviceType)) {
+        return res.status(400).json({ success: false, message: "Unsupported service type." });
+      }
+      if (tripType === "round_trip" && (!data.return_date || !data.return_time)) {
+        return res.status(400).json({ success: false, message: "Return date and time are required for a round trip." });
+      }
+
+      data.service_type = serviceType;
+      data.trip_type = tripType;
+      const calculated = calculateBookingPrice(data);
+      const pricing = allowAdminOverrides
+        ? calculateAdminFinalPrice(calculated, data.admin_override || {})
+        : calculatePublicBookingPrice(data);
+
+      // The browser can display an estimate, but only this middleware sets persisted prices.
+      data.outbound_night_surcharge = calculated.outboundNight;
+      data.return_night_surcharge = calculated.returnNight;
+      data.night_surcharge = calculated.night;
+      data.original_price = calculated.base;
+      data.price = pricing.finalPrice;
+      data.discount_amount = pricing.discountAmount;
+      data.promo_code = pricing.discountLabel;
+
+      if (allowAdminOverrides) {
+        req.adminBookingMetadata = {
+          calculated_price: pricing.calculatedPrice,
+          price_override: pricing.hasOverride,
+          override_reason: pricing.overrideReason,
+          admin_user_id: req.adminUser.id,
+          internal_note: cleanAdminText(data.internal_note, 2000),
+          internal_reference: cleanAdminText(data.internal_reference, 150),
+          audit: {
+            calculatedPrice: pricing.calculatedPrice,
+            finalPrice: pricing.finalPrice,
+            discountAmount: pricing.discountAmount,
+            overrideReason: pricing.overrideReason
+          }
+        };
+      } else {
+        delete data.admin_override;
+        delete data.internal_note;
+        delete data.internal_reference;
+      }
+
+      return next();
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message || "Invalid pricing data." });
+    }
+  };
+}
+
+async function createBooking(req, res) {
   try {
     const data = req.body;
     const missing = validateBookingData(data);
+    const marketingAttribution = sanitizeMarketingAttribution(data.marketing_attribution);
 
     if (missing.length > 0) {
       return res.status(400).json({
@@ -50,15 +118,28 @@ router.post("/", async (req, res) => {
       flight_number: data.flight_number || null,
       terminal: data.terminal || null,
       notes: data.notes || null,
-      price: data.price || null,
-      original_price: data.original_price || data.price || null,
+      price: Number(data.price),
+      original_price: Number(data.original_price),
       promo_code: data.promo_code || null,
       payment_method: data.payment_method || null,
       payment_status: "unpaid",
       trip_type: data.trip_type || "one_way",
       status: "pending",
       email_confirmed: false,
-      updated_by: "system"
+      updated_by: req.adminBookingMetadata ? "admin" : "system",
+      ...(process.env.STORE_MARKETING_ATTRIBUTION === "true" && marketingAttribution
+        ? { marketing_attribution: marketingAttribution }
+        : {}),
+      ...(req.adminBookingMetadata
+        ? {
+            calculated_price: req.adminBookingMetadata.calculated_price,
+            price_override: req.adminBookingMetadata.price_override,
+            override_reason: req.adminBookingMetadata.override_reason,
+            admin_user_id: req.adminBookingMetadata.admin_user_id,
+            internal_note: req.adminBookingMetadata.internal_note,
+            internal_reference: req.adminBookingMetadata.internal_reference
+          }
+        : {})
       
     };
 
@@ -74,6 +155,29 @@ router.post("/", async (req, res) => {
         success: false,
         message: "Booking could not be saved."
       });
+    }
+
+    if (req.adminBookingMetadata) {
+      const { error: auditError } = await supabase
+        .from("booking_admin_audit_logs")
+        .insert({
+          booking_number: booking.booking_number,
+          calculated_price: req.adminBookingMetadata.audit.calculatedPrice,
+          previous_price: null,
+          final_price: req.adminBookingMetadata.audit.finalPrice,
+          discount_amount: req.adminBookingMetadata.audit.discountAmount,
+          override_reason: req.adminBookingMetadata.audit.overrideReason,
+          admin_user_id: req.adminBookingMetadata.admin_user_id
+        });
+
+      if (auditError) {
+        await supabase.from("bookings").delete().eq("id", booking.id);
+        console.error("Admin audit log insert error:", auditError);
+        return res.status(500).json({
+          success: false,
+          message: "Admin booking audit could not be saved."
+        });
+      }
     }
     try {
       const calendarIds = await syncBookingCalendarEvents(booking);
@@ -243,6 +347,9 @@ console.log("ADMIN EMAIL :", JSON.stringify(adminEmail, null, 2));
       message: error.message || "Server error."
     });
   }
-});
+}
+
+router.post("/admin", requireAdmin, applyServerPricing(true), createBooking);
+router.post("/", applyServerPricing(false), createBooking);
 
 export default router;
