@@ -8,8 +8,24 @@ import {
 
 const router = express.Router();
 
-function required(value) {
-  return value !== undefined && value !== null && String(value).trim() !== "";
+function cleanText(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isValidContactEmail(value) {
+    if (typeof value !== "string" || value.length > 254) return false;
+    const parts = value.split("@");
+    return parts.length === 2
+        && /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*$/i.test(parts[0])
+        && parts[0].length <= 64
+        && parts[1].includes(".")
+        && parts[1].split(".").every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label));
+}
+
+function isValidContactPhone(value) {
+    if (typeof value !== "string" || !/^\+?[0-9 ()-]+$/.test(value)) return false;
+    const digits = value.replace(/\D/g, "");
+    return digits.length >= 7 && digits.length <= 15;
 }
 
 function subjectLabel(value) {
@@ -26,25 +42,35 @@ function subjectLabel(value) {
 
 router.post("/", async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      subject,
-      message,
-      website,
-      service,
-      marketing_attribution
-    } = req.body;
+    const body = req.body;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return res.status(400).json({ success: false, error: "Invalid contact data.", message: "Invalid contact data." });
+    }
 
+    const { website, service, marketing_attribution } = body;
+
+    // Preserve the existing honeypot protection without sending emails.
     if (website) {
       return res.json({ success: true });
     }
 
-    if (!required(name) || !required(email) || !required(phone) || !required(subject) || !required(message)) {
+    const name = cleanText(body.name);
+    const email = cleanText(body.email);
+    const phone = cleanText(body.phone);
+    const subject = cleanText(body.subject);
+    const message = cleanText(body.message);
+    const validationError = !name ? "Your full name is required."
+      : !isValidContactEmail(email) ? "A valid email address is required."
+      : !isValidContactPhone(phone) ? "A valid phone number is required."
+      : !subject ? "A subject is required."
+      : !message ? "A message is required."
+      : "";
+
+    if (validationError) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields."
+        error: validationError,
+        message: validationError
       });
     }
 
