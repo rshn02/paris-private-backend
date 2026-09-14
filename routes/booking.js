@@ -1,6 +1,9 @@
+import { sendEmail } from "../utils/sendEmail.js";
+import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
+import { validateEmailInput } from "../middleware/emailValidation.js";
 import express from "express";
 import { supabase } from "../config/supabase.js";
-import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import { FROM_EMAIL, REPLY_TO } from "../config/resend.js";
 import { generateReference } from "../utils/generateReference.js";
 import { generateToken } from "../utils/generateToken.js";
 import { syncBookingCalendarEvents } from "../utils/calendar.js";
@@ -297,39 +300,35 @@ const emailData = {
 // EMAIL CLIENT + ADMIN AVEC TEMPLATE RESEND
 // =========================
 
+    return await req.runEmailOperation(async (res) => {
 const templateAlias = process.env.RESEND_TEMPLATE_PENDING;
 
 if (!templateAlias) {
   throw new Error("RESEND_TEMPLATE_PENDING is missing in .env");
 }
 
-const clientEmail = await resend.emails.send({
+await sendEmail("booking-client", {
   from: FROM_EMAIL,
   to: booking.customer_email,
-  reply_to: REPLY_TO,
+  replyTo: REPLY_TO,
   subject: `Booking Confirmation Required • ${emailData.ref}`,
   template: {
     id: templateAlias,
     variables: emailData
   }
-});
+}, req.emailOperationKey);
 
-console.log("CLIENT EMAIL :", JSON.stringify(clientEmail, null, 2));
-
-const adminEmail = await resend.emails.send({
+await sendEmail("booking-admin", {
   from: FROM_EMAIL,
   to: process.env.ADMIN_EMAIL,
-  reply_to: REPLY_TO,
+  replyTo: REPLY_TO,
   subject: `New Booking Pending • ${emailData.ref}`,
   template: {
     id: templateAlias,
     variables: emailData
   }
-});
+}, req.emailOperationKey);
 
-
-
-console.log("ADMIN EMAIL :", JSON.stringify(adminEmail, null, 2));
     await supabase
       .from("bookings")
       .update({ last_email_sent: new Date().toISOString() })
@@ -338,6 +337,7 @@ console.log("ADMIN EMAIL :", JSON.stringify(adminEmail, null, 2));
     return res.json({
       success: true,
       booking_number: booking.booking_number
+    });
     });
 
   } catch (error) {
@@ -349,7 +349,7 @@ console.log("ADMIN EMAIL :", JSON.stringify(adminEmail, null, 2));
   }
 }
 
-router.post("/admin", requireAdmin, applyServerPricing(true), createBooking);
-router.post("/", applyServerPricing(false), createBooking);
+router.post("/admin", requireAdmin, validateEmailInput("customer_email"), preventDuplicateEmails(), applyServerPricing(true), createBooking);
+router.post("/", ...emailRateLimits(), validateEmailInput("customer_email"), preventDuplicateEmails(), applyServerPricing(false), createBooking);
 
 export default router;

@@ -1,6 +1,10 @@
+import { normalizeTime } from "../utils/normalizeTime.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
+import { validateEmailInput } from "../middleware/emailValidation.js";
 import express from "express";
 import { supabase } from "../config/supabase.js";
-import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import { FROM_EMAIL, REPLY_TO } from "../config/resend.js";
 import { syncBookingCalendarEvents } from "../utils/calendar.js";
 
 const router = express.Router();
@@ -219,7 +223,7 @@ router.post("/find", async (req, res) => {
 });
 
 /* MODIFY BOOKING */
-router.post("/modify", async (req, res) => {
+router.post("/modify", ...emailRateLimits(), validateEmailInput("customer_email"), preventDuplicateEmails(), async (req, res) => {
   try {
     const {
       booking_number,
@@ -298,6 +302,17 @@ router.post("/modify", async (req, res) => {
       terminal: terminal ?? booking.terminal,
       notes: notes ?? booking.notes
     };
+
+    const editableFields = ["service_type", "trip_type", "booking_date", "booking_time",
+      "return_date", "return_time", "pickup_location", "destination", "vehicle_type",
+      "passengers", "children", "luggage", "baby_seats", "child_seats", "flight_number", "terminal", "notes"];
+    const unchanged = editableFields.every(field =>
+      ["booking_time", "return_time"].includes(field)
+        ? normalizeTime(mergedBooking[field]) === normalizeTime(booking[field])
+        : String(mergedBooking[field] ?? "") === String(booking[field] ?? ""));
+    if (unchanged) {
+      return res.json({ success: true, message: "Booking details are unchanged.", booking: customerBookingView(booking) });
+    }
 
     const price = calculatePrice(mergedBooking);
 
@@ -382,37 +397,34 @@ router.post("/modify", async (req, res) => {
     }
 
     const emailData = buildEmailData(updatedBooking);
+    return await req.runEmailOperation(async (res) => {
     const templateAlias = process.env.RESEND_TEMPLATE_MODIFIED;
 
     if (!templateAlias) {
       throw new Error("RESEND_TEMPLATE_MODIFIED is missing in .env");
     }
 
-    const clientEmail = await resend.emails.send({
+    await sendEmail("manage-modify-client", {
       from: FROM_EMAIL,
       to: updatedBooking.customer_email,
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
       subject: `Your Booking Has Been Updated • ${emailData.ref}`,
       template: {
         id: templateAlias,
         variables: emailData
       }
-    });
+    }, req.emailOperationKey);
 
-    console.log("MODIFIED CLIENT EMAIL:", clientEmail);
-
-    const adminEmail = await resend.emails.send({
+    await sendEmail("manage-modify-admin", {
       from: FROM_EMAIL,
       to: process.env.ADMIN_EMAIL,
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
       subject: `Booking Modified by Client • ${emailData.ref}`,
       template: {
         id: templateAlias,
         variables: emailData
       }
-    });
-
-    console.log("MODIFIED ADMIN EMAIL:", adminEmail);
+    }, req.emailOperationKey);
 
     await supabase
       .from("bookings")
@@ -425,6 +437,7 @@ router.post("/modify", async (req, res) => {
       booking: customerBookingView(updatedBooking),
       price
     });
+    });
 
   } catch (error) {
     console.error("Modify route error:", error);
@@ -436,7 +449,7 @@ router.post("/modify", async (req, res) => {
 });
 
 /* CANCEL BOOKING */
-router.post("/cancel", async (req, res) => {
+router.post("/cancel", ...emailRateLimits(), validateEmailInput("customer_email"), preventDuplicateEmails(), async (req, res) => {
   try {
     const { booking_number, customer_email } = req.body;
 
@@ -521,37 +534,34 @@ router.post("/cancel", async (req, res) => {
     }
 
     const emailData = buildEmailData(updatedBooking);
+    return await req.runEmailOperation(async (res) => {
     const templateAlias = process.env.RESEND_TEMPLATE_CANCELLED;
 
     if (!templateAlias) {
       throw new Error("RESEND_TEMPLATE_CANCELLED is missing in .env");
     }
 
-    const clientEmail = await resend.emails.send({
+    await sendEmail("manage-cancel-client", {
       from: FROM_EMAIL,
       to: updatedBooking.customer_email,
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
       subject: `Booking Cancelled • ${emailData.ref}`,
       template: {
         id: templateAlias,
         variables: emailData
       }
-    });
+    }, req.emailOperationKey);
 
-    console.log("CANCELLED CLIENT EMAIL:", clientEmail);
-
-    const adminEmail = await resend.emails.send({
+    await sendEmail("manage-cancel-admin", {
       from: FROM_EMAIL,
       to: process.env.ADMIN_EMAIL,
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
       subject: `Booking Cancelled by Client • ${emailData.ref}`,
       template: {
         id: templateAlias,
         variables: emailData
       }
-    });
-
-    console.log("CANCELLED ADMIN EMAIL:", adminEmail);
+    }, req.emailOperationKey);
 
     await supabase
       .from("bookings")
@@ -562,6 +572,7 @@ router.post("/cancel", async (req, res) => {
       success: true,
       message: "Booking cancelled successfully.",
       booking: customerBookingView(updatedBooking)
+    });
     });
 
   } catch (error) {

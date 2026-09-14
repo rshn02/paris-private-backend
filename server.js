@@ -12,6 +12,10 @@ dotenv.config();
 
 const app = express();
 
+// Render terminates incoming HTTP at its reverse proxy. Never trust arbitrary
+// forwarded chains on direct/local deployments.
+if (process.env.RENDER === "true") app.set("trust proxy", 1);
+
 app.use(express.json());
 
 app.use(cors({

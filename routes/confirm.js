@@ -1,11 +1,13 @@
+import { sendEmail } from "../utils/sendEmail.js";
+import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
 import express from "express";
 import { supabase } from "../config/supabase.js";
-import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import { FROM_EMAIL, REPLY_TO } from "../config/resend.js";
 import { syncBookingCalendarEvents } from "../utils/calendar.js";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res) => {
   try {
     const { token } = req.body;
 
@@ -183,37 +185,34 @@ router.post("/", async (req, res) => {
 
       manage_url: `${process.env.CLIENT_URL}/manage-booking.html`
     };
+    return await req.runEmailOperation(async (res) => {
     const templateAlias = process.env.RESEND_TEMPLATE_CONFIRMED;
 
 if (!templateAlias) {
   throw new Error("RESEND_TEMPLATE_CONFIRMED is missing in .env");
 }
 
-const clientEmail = await resend.emails.send({
+await sendEmail("confirm-client", {
   from: FROM_EMAIL,
   to: updatedBooking.customer_email,
-  reply_to: REPLY_TO,
+  replyTo: REPLY_TO,
   subject: `Your Booking is Confirmed • ${emailData.ref}`,
   template: {
     id: templateAlias,
     variables: emailData
   }
-});
+}, req.emailOperationKey);
 
-console.log("CONFIRMED CLIENT EMAIL :", clientEmail);
-
-const adminEmail = await resend.emails.send({
+await sendEmail("confirm-admin", {
   from: FROM_EMAIL,
   to: process.env.ADMIN_EMAIL,
-  reply_to: REPLY_TO,
+  replyTo: REPLY_TO,
   subject: `Booking Confirmed by Client • ${emailData.ref}`,
   template: {
     id: templateAlias,
     variables: emailData
   }
-});
-
-console.log("CONFIRMED ADMIN EMAIL :", adminEmail);
+}, req.emailOperationKey);
 
     await supabase
       .from("bookings")
@@ -225,6 +224,7 @@ console.log("CONFIRMED ADMIN EMAIL :", adminEmail);
     return res.json({
       success: true,
       booking_number: updatedBooking.booking_number
+    });
     });
 
   } catch (error) {

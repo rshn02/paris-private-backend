@@ -1,5 +1,8 @@
+import { sendEmail } from "../utils/sendEmail.js";
+import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
+import { validateEmailInput } from "../middleware/emailValidation.js";
 import express from "express";
-import { resend, FROM_EMAIL, REPLY_TO } from "../config/resend.js";
+import { FROM_EMAIL, REPLY_TO } from "../config/resend.js";
 import {
   cleanMarketingService,
   formatInternalMarketingAttribution,
@@ -37,10 +40,12 @@ function subjectLabel(value) {
     other: "Other"
   };
 
-  return labels[value] || value || "Contact request";
+  return Object.hasOwn(labels, value) ? labels[value] : "Contact request";
 }
 
-router.post("/", async (req, res) => {
+router.post("/", ...emailRateLimits(),
+  (req, res, next) => req.body?.website ? res.json({ success: true }) : next(),
+  validateEmailInput("email"), preventDuplicateEmails(), async (req, res) => {
   try {
     const body = req.body;
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -80,7 +85,7 @@ router.post("/", async (req, res) => {
       phone,
       subject: subjectLabel(subject),
       message,
-      contact_date: new Date().toLocaleString("fr-FR"),
+      contact_date: req.emailContactDate,
       reply_to: email
     };
 
@@ -94,53 +99,39 @@ router.post("/", async (req, res) => {
       ? { ...data, message: `${data.message}\n\n---\n${attributionSummary}` }
       : data;
 
+    return await req.runEmailOperation(async (res) => {
     const templateId = process.env.RESEND_TEMPLATE_CONTACT;
 
 if (!templateId) {
   throw new Error("RESEND_TEMPLATE_CONTACT is missing in .env");
 }
 
-const adminEmail = await resend.emails.send({
+await sendEmail("contact-admin", {
   from: FROM_EMAIL,
   to: process.env.ADMIN_EMAIL,
-  reply_to: email,
+  replyTo: email,
   subject: `New Contact Request • ${data.subject}`,
   template: {
     id: templateId,
     variables: adminData
   }
-});
+}, req.emailOperationKey);
 
-if (adminEmail?.error) {
-  console.error("CONTACT ADMIN EMAIL ERROR:", adminEmail.error);
-  throw new Error("Contact message could not be delivered.");
-}
-
-console.log("CONTACT ADMIN EMAIL:", adminEmail);
-
-const clientEmail = await resend.emails.send({
+await sendEmail("contact-client", {
   from: FROM_EMAIL,
   to: email,
-  reply_to: REPLY_TO,
+  replyTo: REPLY_TO,
   subject: "We received your message",
   template: {
     id: templateId,
     variables: data
   }
-});
-
-if (clientEmail?.error) {
-  console.error("CONTACT CLIENT EMAIL ERROR:", clientEmail.error);
-  throw new Error("Contact acknowledgement could not be delivered.");
-}
-
-console.log("CONTACT CLIENT EMAIL:", clientEmail);
-
-    console.log("CONTACT CLIENT EMAIL:", clientEmail);
+}, req.emailOperationKey);
 
     return res.json({
       success: true,
       message: "Message sent successfully."
+    });
     });
 
   } catch (error) {
