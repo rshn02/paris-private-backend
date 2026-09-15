@@ -34,18 +34,37 @@ export function isNightTime(time) {
   return hour >= 22 || hour < 6;
 }
 
+// Match the existing form: 1–8 adults, 0–8 children, the 5+ bags
+// option encoded as 5, and seat counters capped at 10.
+export function normalizeBookingNumbers(data) {
+  const limits = { passengers: [1, 8, 1], children: [0, 8, 0], luggage: [0, 5, 0],
+    baby_seats: [0, 10, 0], child_seats: [0, 10, 0] };
+  const normalized = {};
+  for (const [field, [min, max, fallback]] of Object.entries(limits)) {
+    const raw = data[field] === undefined ? fallback : data[field];
+    const value = typeof raw === "number" ? raw
+      : typeof raw === "string" && /^\d+$/.test(raw.trim()) ? Number(raw.trim()) : NaN;
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < min || value > max) {
+      throw new Error(`${field} must be an integer between ${min} and ${max}.`);
+    }
+    normalized[field] = value;
+  }
+  return normalized;
+}
+
 export function calculateBookingPrice(data) {
   const serviceType = data.service_type;
-  const grid = PRICING[serviceType];
+  const grid = isSupportedService(serviceType) ? PRICING[serviceType] : null;
 
   if (!grid) {
     throw new Error("Unsupported service type.");
   }
 
-  const adults = Number(data.passengers || 1);
-  const children = Number(data.children || 0);
-  const people = Math.max(adults + children, 1);
-  const base = grid.default ?? grid[Math.min(Math.max(people, 1), SERVICE_MAX[serviceType])] ?? 0;
+  const counts = normalizeBookingNumbers(data);
+  const people = counts.passengers + counts.children;
+  // Preserve the existing public calculator's service cap for valid integers.
+  const base = grid.default ?? grid[Math.min(people, SERVICE_MAX[serviceType])];
+  if (!Number.isFinite(base) || base <= 0) throw new Error("No fare is available for this booking.");
   const isRoundTrip = data.trip_type === "round_trip";
   const outboundNight = isNightTime(data.booking_time) ? NIGHT_SURCHARGE : 0;
   const returnNight = isRoundTrip && isNightTime(data.return_time) ? NIGHT_SURCHARGE : 0;

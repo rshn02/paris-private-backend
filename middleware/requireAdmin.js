@@ -17,8 +17,14 @@ export async function requireAdmin(req, res, next) {
     return res.status(401).json({ success: false, message: "Admin authentication is required." });
   }
 
-  const { data, error } = await supabase.auth.getUser(match[1]);
-  if (error || !data.user) {
+  let result;
+  try {
+    result = await supabase.auth.getUser(match[1]);
+  } catch {
+    return res.status(503).json({ success: false, message: "Admin authentication is temporarily unavailable." });
+  }
+  const { data, error } = result || {};
+  if (error || !data?.user) {
     return res.status(401).json({ success: false, message: "Invalid or expired admin session." });
   }
 
