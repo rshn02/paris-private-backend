@@ -87,3 +87,23 @@ test('invalid pricing rejected before persistence or external effects on both ro
   assert.equal(f.emails.length,0);assert.equal(f.inserts.length,0);assert.equal(f.calendar,0);
  });
 });
+test('Other with a chosen price uses the admin pending workflow without automatic supplements',async t=>{
+ const f=fixture();await serve(t,f,async request=>{
+  const body={...valid,service_type:'other',booking_time:'23:00',trip_type:'round_trip',return_date:'2026-12-02',return_time:'23:30',admin_override:{custom_price:185}};
+  assert.equal((await request('/api/bookings/admin','admin-token',body)).status,200);
+  assert.equal(f.inserts[0].data.price,185);assert.equal(f.inserts[0].data.original_price,185);assert.equal(f.inserts[0].data.night_surcharge,0);assert.equal(f.inserts[0].data.status,'pending');assert.equal(f.calendar,1);assert.equal(f.emails.length,2);
+ });
+});
+test('public Other is forbidden even with a supplied custom price',async t=>{
+ const f=fixture();await serve(t,f,async request=>{assert.equal((await request('/api/bookings',null,{...valid,service_type:'other',admin_override:{custom_price:185}})).status,400);assert.equal(f.inserts.length,0);assert.equal(f.emails.length,0);});
+});
+test('Other rejects missing, zero, negative and malformed prices',()=>{
+ for(const custom_price of [undefined,null,0,-1,NaN,Infinity,'185',true,{}])assert.throws(()=>pricing.calculateBookingPrice({...valid,service_type:'other',admin_override:{custom_price}},{allowCustomService:true}),/custom price/);
+ assert.throws(()=>pricing.calculatePublicBookingPrice({...valid,service_type:'other',admin_override:{custom_price:185}}),/Unsupported/);
+});
+test('admin Other without a price or with invalid counts sends no email',async t=>{
+ const f=fixture();await serve(t,f,async request=>{
+  for(const extra of [{},{admin_override:{custom_price:0}},{passengers:1.5,admin_override:{custom_price:185}}])assert.equal((await request('/api/bookings/admin','admin-token',{...valid,service_type:'other',...extra})).status,400);
+  assert.equal(f.inserts.length,0);assert.equal(f.emails.length,0);
+ });
+});

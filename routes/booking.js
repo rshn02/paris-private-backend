@@ -27,7 +27,7 @@ function applyServerPricing(allowAdminOverrides) {
       const serviceType = String(data.service_type || "").trim();
       const tripType = data.trip_type === "round_trip" ? "round_trip" : "one_way";
 
-      if (!isSupportedService(serviceType)) {
+      if (!isSupportedService(serviceType) && !(allowAdminOverrides && serviceType === "other")) {
         return res.status(400).json({ success: false, message: "Unsupported service type." });
       }
       if (tripType === "round_trip" && (!data.return_date || !data.return_time)) {
@@ -36,7 +36,7 @@ function applyServerPricing(allowAdminOverrides) {
 
       data.service_type = serviceType;
       data.trip_type = tripType;
-      const calculated = calculateBookingPrice(data);
+      const calculated = calculateBookingPrice(data, { allowCustomService: allowAdminOverrides });
       const pricing = allowAdminOverrides
         ? calculateAdminFinalPrice(calculated, data.admin_override || {})
         : calculatePublicBookingPrice(data);

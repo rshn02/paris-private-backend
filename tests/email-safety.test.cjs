@@ -25,7 +25,7 @@ const quiet = {log(){},error(){}};
 const validContact = {name:'John Doe',email:'john@example.com',phone:'+44 7700 900123',subject:'quote',message:'Please send a quote.',website:''};
 const validBooking = {customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
 function fixture(route, options={}) {
-  const calls=[], logs=[];
+  const calls=[], logs=[], calendarCalls=[];
   let updates=0, inserts=0;
   let booking={...validBooking,id:1,booking_number:'TEST-1',status:'pending',price:80,original_price:80,trip_type:'one_way',...options.booking};
   const accepted = new Map();
@@ -44,7 +44,8 @@ function fixture(route, options={}) {
   }}};
   const {sendEmail}=load('utils/sendEmail.js',{...crypto,resend,...validation,console:{log:(...x)=>logs.push(x),error:(...x)=>logs.push(x)}},['sendEmail']);
   const supabase={from:()=>{
-    const query={select(){return this},eq(){return this},single:async()=>({data:booking,error:null}),
+    const filters=[];
+    const query={select(){return this},eq(key,value){filters.push([key,value]);return this},single:async()=>({data:options.enforceIdentity && !filters.every(([key,value])=>booking[key]===value) ? null : booking,error:null}),
       insert(data){inserts++;booking={...booking,...data};return this},
       update(data){updates++;booking={...booking,...data};return this},
       then(resolve){return Promise.resolve({data:booking,error:null}).then(resolve)}};
@@ -55,13 +56,13 @@ function fixture(route, options={}) {
     FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'company@gmail.com',
     process:{env:{ADMIN_EMAIL:'admin@example.com',CLIENT_URL:'https://example.com',RESEND_TEMPLATE_CONTACT:'contact-template',RESEND_TEMPLATE_PENDING:'pending-template',RESEND_TEMPLATE_CONFIRMED:'confirmed-template',RESEND_TEMPLATE_MODIFIED:'modified-template',RESEND_TEMPLATE_CANCELLED:'cancelled-template'}},
     sanitizeMarketingAttribution:()=>null,cleanMarketingService:()=>'',formatInternalMarketingAttribution:()=>'',
-    syncBookingCalendarEvents:async()=>({outboundEventId:null,returnEventId:null}),generateReference:async()=>'TEST-1',generateToken:()=> 'synthetic-test-token',
+    syncBookingCalendarEvents:async(value)=>{calendarCalls.push({...value});return {outboundEventId:null,returnEventId:null}},generateReference:async()=>'TEST-1',generateToken:()=> 'synthetic-test-token',
     requireAdmin:(req,res,next)=>next(),isSupportedService:()=>true,
     calculateBookingPrice:()=>({base:80,night:0,outboundNight:0,returnNight:0}),
     calculatePublicBookingPrice:()=>({finalPrice:80,discountAmount:0,discountLabel:''}),calculateAdminFinalPrice:()=>({finalPrice:80,discountAmount:0,discountLabel:''})};
   const {router}=load('routes/'+route+'.js',bindings,['router']);
   const app=express(); app.set('trust proxy',1); app.use(express.json());app.use(router);
-  return {app,calls,logs,get updates(){return updates},get inserts(){return inserts},get booking(){return booking}};
+  return {app,calls,logs,calendarCalls,get updates(){return updates},get inserts(){return inserts},get booking(){return booking}};
 }
 async function serve(t,fixture,fn){
  const server=fixture.app.listen(0,'127.0.0.1'); await new Promise(r=>server.once('listening',r));
@@ -192,3 +193,36 @@ test('confirmation operation token supports a retry without a client header',asy
   assert.equal(f.calls.length,3);
  });
 });
+
+// The real manage routes run against mocked persistence, Calendar and Resend.
+for (const metadata of [{}, {admin_user_id:'admin-test',price_override:false},
+  {admin_user_id:'admin-test',price_override:true},
+  {admin_user_id:'admin-test',price_override:true,service_type:'other'}]) {
+ test('confirmed booking lookup and cancellation preserve administrative history '+JSON.stringify(metadata),async t=>{
+  const history={price:185,calculated_price:240,discount_amount:25,original_price:210,
+   internal_note:'Test note',internal_reference:'TEST-INTERNAL',override_reason:'Agreed price',...metadata};
+  const f=fixture('manage',{enforceIdentity:true,booking:{...history,status:'confirmed'}});
+  await serve(t,f,async post=>{
+   const identity={booking_number:'TEST-1',customer_email:validBooking.customer_email};
+   const found=await post(identity,'/find');assert.equal(found.status,200);
+   assert.equal(found.body.booking.price,185);assert.equal(found.body.booking.internal_note,undefined);
+   const cancelled=await post(identity,'/cancel');assert.equal(cancelled.status,200);
+   assert.equal(f.booking.status,'cancelled');assert.ok(Number.isFinite(Date.parse(f.booking.cancelled_at)));
+   for(const [field,value] of Object.entries(history))assert.equal(f.booking[field],value,field+' must remain unchanged');
+   assert.equal(f.calendarCalls.length,1);assert.equal(f.calendarCalls[0].status,'cancelled');assert.equal(f.calendarCalls[0].price,185);
+   assert.equal(f.calls.length,2);assert.equal(f.calls[0].payload.template.id,'cancelled-template');assert.equal(f.calls[0].payload.to,identity.customer_email);
+   const updates=f.updates;
+   const again=await post(identity,'/cancel','203.0.113.10',opB);assert.equal(again.status,200);assert.equal(again.body.message,'Booking already cancelled.');assert.equal(f.updates,updates);assert.equal(f.calendarCalls.length,1);assert.equal(f.calls.length,2);
+  });
+ });
+}
+for(const identity of [{booking_number:'TEST-1',customer_email:'wrong@example.com'},
+ {booking_number:'WRONG',customer_email:validBooking.customer_email}, {booking_number:'TEST-1'}]) {
+ test('find and cancel reject mismatched or missing identity '+JSON.stringify(identity),async t=>{
+  const f=fixture('manage',{enforceIdentity:true,booking:{status:'confirmed',admin_user_id:'admin-test',price_override:true}});
+  await serve(t,f,async post=>{
+   for(const url of ['/find','/cancel'])assert.equal((await post(identity,url)).status,identity.customer_email?404:400);
+   assert.equal(f.updates,0);assert.equal(f.calls.length,0);assert.equal(f.calendarCalls.length,0);
+  });
+ });
+}

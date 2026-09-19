@@ -52,8 +52,18 @@ export function normalizeBookingNumbers(data) {
   return normalized;
 }
 
-export function calculateBookingPrice(data) {
+export function calculateBookingPrice(data, { allowCustomService = false } = {}) {
   const serviceType = data.service_type;
+  if (serviceType === "other" && allowCustomService) {
+    normalizeBookingNumbers(data);
+    const price = data.admin_override?.custom_price;
+    if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+      throw new Error("Other requires a custom price greater than 0.");
+    }
+    // The administrator's amount covers the entire trip, including any return
+    // and night travel. There is no automatic fare for this service.
+    return { base: price, outboundNight: 0, returnNight: 0, night: 0, total: price };
+  }
   const grid = isSupportedService(serviceType) ? PRICING[serviceType] : null;
 
   if (!grid) {
