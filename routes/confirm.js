@@ -68,10 +68,7 @@ router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res
       });
     }
 
-    let calendarIds = {
-      outboundEventId: null,
-      returnEventId: null
-    };
+    let calendarIds = null;
 
     try {
       calendarIds = await syncBookingCalendarEvents(updatedBooking);
@@ -91,16 +88,20 @@ router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res
       });
     }
 
-    const { error: calendarUpdateError } = await supabase
-      .from("bookings")
-      .update({
-        google_event_outbound_id: calendarIds.outboundEventId,
-        google_event_return_id: calendarIds.returnEventId
-      })
-      .eq("id", updatedBooking.id);
+    // A failed sync must not overwrite stored IDs. A successful sync may
+    // deliberately return a null returnEventId after removing the return leg.
+    if (calendarIds !== null) {
+      const { error: calendarUpdateError } = await supabase
+        .from("bookings")
+        .update({
+          google_event_outbound_id: calendarIds.outboundEventId,
+          google_event_return_id: calendarIds.returnEventId
+        })
+        .eq("id", updatedBooking.id);
 
-    if (calendarUpdateError) {
-      console.error("GOOGLE CALENDAR IDS SAVE ERROR:", calendarUpdateError);
+      if (calendarUpdateError) {
+        console.error("GOOGLE CALENDAR IDS SAVE ERROR:", calendarUpdateError);
+      }
     }
 
     const basePrice = Number(updatedBooking.original_price || 0);
