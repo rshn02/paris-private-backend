@@ -7,15 +7,18 @@ const crypto=require('node:crypto');
 const express=require('express');
 const {rateLimit}=require('express-rate-limit');
 const root=path.resolve(__dirname,'..');
+const phone = require('../utils/phone.cjs');
+
 function load(file,bindings,names){
  const source=fs.readFileSync(path.join(root,file),'utf8').replace(/^import\s+[\s\S]*?;\s*$/gm,'').replace(/export default router;/,'').replace(/export /g,'');
  return vm.runInNewContext(source+'\n;({'+names.join(',')+'})',{...bindings});
 }
+const phoneValidation = load('middleware/phoneValidation.js', {phone}, ['validatePhoneInput']);
 const pricing=load('utils/pricing.js',{},['calculateBookingPrice','calculateAdminFinalPrice','calculatePublicBookingPrice','isSupportedService','normalizeBookingNumbers']);
 const validation=load('middleware/validation.js',{},['validateBookingData']);
 const emailValidation=load('middleware/emailValidation.js',{},['validateEmailInput']);
 const protection=load('middleware/emailProtection.js',{...crypto,rateLimit},['emailRateLimits','preventDuplicateEmails']);
-const valid={customer_name:'Test Customer',customer_email:'client@example.com',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00',service_type:'cdg-paris',passengers:2,children:0,luggage:1,baby_seats:0,child_seats:0};
+const valid={customer_phone:'+12025550123',customer_name:'Test Customer',customer_email:'client@example.com',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00',service_type:'cdg-paris',passengers:2,children:0,luggage:1,baby_seats:0,child_seats:0};
 function fixture(options={}){
  const emails=[],inserts=[],logs=[];let calendar=0;
  const env={ADMIN_USER_IDS:options.unconfigured?'':'admin-id',ADMIN_EMAIL:'admin@example.com',CLIENT_URL:'https://example.com',RESEND_TEMPLATE_PENDING:'pending-template'};
@@ -28,7 +31,7 @@ function fixture(options={}){
  };}};
  const console={log:(...x)=>logs.push(x),error:(...x)=>logs.push(x)};
  const {requireAdmin}=load('middleware/requireAdmin.js',{supabase,process:{env},console},['requireAdmin']);
- const bindings={express,supabase,process:{env},console,requireAdmin,...pricing,...validation,...emailValidation,...protection,
+ const bindings={...phoneValidation,express,supabase,process:{env},console,requireAdmin,...pricing,...validation,...emailValidation,...protection,
   sendEmail:async(...args)=>{emails.push(args);return{id:'mock-email-id'};},FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'admin@example.com',
   generateReference:async()=>'TEST-ADMIN',generateToken:()=>'mock-confirm-token',sanitizeMarketingAttribution:()=>null,
   syncBookingCalendarEvents:async()=>{calendar++;return{outboundEventId:'mock-event',returnEventId:null};}};
@@ -105,5 +108,13 @@ test('admin Other without a price or with invalid counts sends no email',async t
  const f=fixture();await serve(t,f,async request=>{
   for(const extra of [{},{admin_override:{custom_price:0}},{passengers:1.5,admin_override:{custom_price:185}}])assert.equal((await request('/api/bookings/admin','admin-token',{...valid,service_type:'other',...extra})).status,400);
   assert.equal(f.inserts.length,0);assert.equal(f.emails.length,0);
+ });
+});
+
+test('admin invalid phone cannot create a booking, audit, calendar event or email',async t=>{
+ const f=fixture();await serve(t,f,async request=>{
+  const result=await request('/api/bookings/admin','admin-token',{...valid,customer_phone:'07400123456',phone_country:'FR'});
+  assert.equal(result.status,400);assert.equal(result.body.code,'INVALID_PHONE');
+  assert.equal(f.inserts.length,0);assert.equal(f.calendar,0);assert.equal(f.emails.length,0);
  });
 });

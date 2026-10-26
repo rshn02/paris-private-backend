@@ -10,6 +10,8 @@ const dependencyRequire = process.env.PPAT_TEST_NODE_MODULES
 const express = dependencyRequire('express');
 const { rateLimit } = dependencyRequire('express-rate-limit');
 const root = path.resolve(__dirname, '..');
+const phone = require('../utils/phone.cjs');
+
 function load(file, bindings, exports) {
   const source = fs.readFileSync(path.join(root, file), 'utf8')
     .replace(/^import\s+[\s\S]*?;\s*$/gm, '')
@@ -18,12 +20,13 @@ function load(file, bindings, exports) {
   vm.runInContext(source + '\n;globalThis.out = {' + exports.join(',') + '};', context);
   return context.out;
 }
+const phoneValidation = load('middleware/phoneValidation.js', {phone}, ['validatePhoneInput']);
 const validation = load('middleware/emailValidation.js', {}, ['isValidEmail', 'validateEmailInput']);
 const protection = load('middleware/emailProtection.js', {...crypto, rateLimit}, ['emailRateLimits', 'preventDuplicateEmails']);
 const { normalizeTime } = load("utils/normalizeTime.js", {}, ["normalizeTime"]);
 const quiet = {log(){},error(){}};
-const validContact = {name:'John Doe',email:'john@example.com',phone:'+44 7700 900123',subject:'quote',message:'Please send a quote.',website:''};
-const validBooking = {customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
+const validContact = {name:'John Doe',email:'john@example.com',phone:'+44 7400 123456',subject:'quote',message:'Please send a quote.',website:''};
+const validBooking = {customer_phone:'+12025550123',customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
 function fixture(route, options={}) {
   const calls=[], logs=[], calendarCalls=[];
   let updates=0, inserts=0;
@@ -52,7 +55,7 @@ function fixture(route, options={}) {
     return query;
   }};
   const originalValidation=load('middleware/validation.js',{},['validateBookingData']);
-  const bindings={express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
+  const bindings={...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
     FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'company@gmail.com',
     process:{env:{ADMIN_EMAIL:'admin@example.com',CLIENT_URL:'https://example.com',RESEND_TEMPLATE_CONTACT:'contact-template',RESEND_TEMPLATE_PENDING:'pending-template',RESEND_TEMPLATE_CONFIRMED:'confirmed-template',RESEND_TEMPLATE_MODIFIED:'modified-template',RESEND_TEMPLATE_CANCELLED:'cancelled-template'}},
     sanitizeMarketingAttribution:()=>null,cleanMarketingService:()=>'',formatInternalMarketingAttribution:()=>'',
@@ -226,3 +229,49 @@ for(const identity of [{booking_number:'TEST-1',customer_email:'wrong@example.co
   });
  });
 }
+
+for (const route of ['contact','booking']) {
+ const field = route === 'contact' ? 'phone' : 'customer_phone';
+ const base = route === 'contact' ? validContact : validBooking;
+ for (const [phone_country,value,expected] of [
+  ['US','(202) 555-0123','+12025550123'],['CA','+1 (416) 555-0123','+14165550123'],
+  ['FR','06 12 34 56 78','+33612345678'],['GB','07400-123456','+447400123456']
+ ]) test(`${route} persists/transmits E.164 for ${phone_country}`, async t => {
+  const f=fixture(route);await serve(t,f,async post=>{
+   assert.equal((await post({...base,[field]:value,phone_country})).status,200);
+   assert.equal(f.calls.length,2);
+   for(const {payload} of f.calls) assert.equal(payload.template.variables[route==='contact'?'phone':'client_phone'],expected);
+   if(route==='booking') {assert.equal(f.booking.customer_phone,expected);assert.equal(f.calendarCalls[0].customer_phone,expected);}
+  });
+ });
+ for(const [phone_country,value] of [['FR','061234567890'],['US','202555'],['FR','+447400123456'],['FR','07400123456'],['CA','+12025550123'],['US',null]]) {
+  test(`${route} rejects ${phone_country} ${value} before every effect and permits correction`, async t=>{
+   const f=fixture(route);await serve(t,f,async post=>{
+    const invalid=await post({...base,[field]:value,phone_country,language:'fr'});
+    assert.equal(invalid.status,400);assert.equal(invalid.body.code,'INVALID_PHONE');assert.match(invalid.body.message,/Veuillez/);
+    assert.equal(f.inserts,0);assert.equal(f.updates,0);assert.equal(f.calendarCalls.length,0);assert.equal(f.calls.length,0);
+    assert.equal((await post({...base,[field]:'+12025550123',phone_country:'US'})).status,200);
+   });
+  });
+ }
+}
+
+for(const [route,url,body]of [
+ ['confirm','/',{token:'synthetic-test-token'}],
+ ['manage','/modify',{booking_number:'TEST-1',customer_email:validBooking.customer_email,notes:'Changed'}],
+ ['manage','/cancel',{booking_number:'TEST-1',customer_email:validBooking.customer_email}]
+])test(`${route}${url} preserves a historical unnormalized phone`,async t=>{
+ const oldPhone='06 12 34 56 78';const f=fixture(route,{booking:{customer_phone:oldPhone}});
+ await serve(t,f,async post=>{assert.equal((await post(body,url)).status,200);assert.equal(f.calls.length,2);for(const {payload}of f.calls)assert.equal(payload.template.variables.client_phone,oldPhone);});
+});
+
+for(const oldPhone of [null,'historical unknown phone','06 12 34 56 78'])test('legacy find, modify and cancel do not require a new phone: '+oldPhone,async t=>{
+ const f=fixture('manage',{enforceIdentity:true,booking:{customer_phone:oldPhone,status:'confirmed',payment_method:'Card to driver',payment_status:'paid'}});
+ await serve(t,f,async post=>{
+  const identity={booking_number:'TEST-1',customer_email:validBooking.customer_email};
+  const found=await post(identity,'/find');assert.equal(found.status,200);assert.equal(found.body.booking.customer_phone,oldPhone);
+  const modified=await post({...identity,notes:'Compatibility update'},'/modify');assert.equal(modified.status,200);assert.equal(modified.body.booking.customer_phone,oldPhone);
+  const cancelled=await post(identity,'/cancel','203.0.113.10',opB);assert.equal(cancelled.status,200);assert.equal(cancelled.body.booking.customer_phone,oldPhone);
+  assert.equal(f.booking.payment_method,'Card to driver');assert.equal(f.booking.payment_status,'paid');
+ });
+});

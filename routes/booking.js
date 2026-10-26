@@ -1,6 +1,7 @@
 import { sendEmail } from "../utils/sendEmail.js";
 import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
 import { validateEmailInput } from "../middleware/emailValidation.js";
+import { validatePhoneInput } from "../middleware/phoneValidation.js";
 import express from "express";
 import { supabase } from "../config/supabase.js";
 import { FROM_EMAIL, REPLY_TO } from "../config/resend.js";
@@ -349,7 +350,7 @@ await sendEmail("booking-admin", {
   }
 }
 
-router.post("/admin", requireAdmin, validateEmailInput("customer_email"), preventDuplicateEmails(), applyServerPricing(true), createBooking);
-router.post("/", ...emailRateLimits(), validateEmailInput("customer_email"), preventDuplicateEmails(), applyServerPricing(false), createBooking);
+router.post("/admin", requireAdmin, validateEmailInput("customer_email"), validatePhoneInput("customer_phone"), preventDuplicateEmails(), applyServerPricing(true), createBooking);
+router.post("/", ...emailRateLimits(), validateEmailInput("customer_email"), validatePhoneInput("customer_phone"), preventDuplicateEmails(), applyServerPricing(false), createBooking);
 
 export default router;

@@ -1,0 +1,1851 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Book airport transfers and private chauffeur journeys for CDG, Orly, Beauvais and long-distance travel with professional driver service."
+    />
+    <meta name="robots" content="index, follow" />
+    <title>Book Airport Transfer & Private Chauffeur</title>
+
+    <link
+      rel="canonical"
+      href="https://www.parisprivateairporttransfer.com/reservation"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="images/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="images/favicon-16x16.png"
+    />
+    <link rel="shortcut icon" href="images/favicon.ico" />
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+    <meta property="og:site_name" content="Paris Private Airport Transfer" />
+    <meta
+      property="og:title"
+      content="Book Your Premium Transfer – Paris Private Airport Transfer"
+    />
+    <meta
+      property="og:description"
+      content="Book your private chauffeur online: airport transfers CDG, Orly, Beauvais, long distance. Confirmation via email required. Booking in 3 minutes."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://www.parisprivateairporttransfer.com/images/og-image.jpg"
+    />
+    <meta
+      property="og:url"
+      content="https://www.parisprivateairporttransfer.com/reservation"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Paris Private Airport Transfer - Private chauffeur service in Paris"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Book Your Premium Transfer – Paris Private Airport Transfer"
+    />
+    <meta
+      name="twitter:description"
+      content="Book your private chauffeur online: airport transfers CDG, Orly, Beauvais, long distance. Confirmation via email required. Booking in 3 minutes."
+    />
+    <meta
+      name="twitter:image"
+      content="https://www.parisprivateairporttransfer.com/images/og-image.jpg"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Paris Private Airport Transfer - Private chauffeur service in Paris"
+    />
+
+    <link
+      rel="preload"
+      as="image"
+      href="images/bg/paris_bg.webp"
+      fetchpriority="high"
+    />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link
+      rel="preload"
+      as="font"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2"
+      type="font/woff2"
+      crossorigin
+    />
+    <style>
+      @font-face {
+        font-family: "Font Awesome 6 Free";
+        font-style: normal;
+        font-weight: 900;
+        font-display: swap;
+        src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2")
+          format("woff2");
+      }
+    </style>
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
+    />
+
+    <!-- Icons -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
+    />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/reservation.bundle.min.css" />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+      />
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      />
+    </noscript>
+
+    <style>
+      .nav-dropdown {
+        position: relative;
+      }
+
+      .nav-dropdown-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .nav-dropdown-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: var(--text-dark);
+        cursor: pointer;
+        transition:
+          color 0.3s ease,
+          transform 0.3s ease;
+      }
+
+      .nav-dropdown-btn i {
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+      }
+
+      .nav-dropdown:hover .nav-dropdown-btn,
+      .nav-dropdown.open .nav-dropdown-btn {
+        color: var(--secondary);
+      }
+
+      .nav-dropdown.open .nav-dropdown-btn i {
+        transform: rotate(180deg);
+      }
+
+      .nav-dropdown-menu {
+        list-style: none;
+        position: absolute;
+        top: calc(100% + 1rem);
+        left: 0;
+        min-width: 240px;
+        padding: 0.85rem 0;
+        background: var(--white);
+        border: 1px solid rgba(201, 169, 97, 0.18);
+        border-radius: 16px;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(8px);
+        transition:
+          opacity 0.25s ease,
+          transform 0.25s ease,
+          visibility 0.25s ease;
+        z-index: 1005;
+      }
+
+      .nav-dropdown.open .nav-dropdown-menu,
+      .nav-dropdown:focus-within .nav-dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .nav-dropdown-menu li {
+        width: 100%;
+      }
+
+      .nav-dropdown-menu a {
+        display: block;
+        padding: 0.7rem 1.2rem;
+        font-size: 0.92rem;
+        color: var(--text-dark);
+      }
+
+      .nav-dropdown-menu a:hover,
+      .nav-dropdown-menu a.active {
+        background: rgba(201, 169, 97, 0.08);
+        color: var(--secondary);
+      }
+
+      .nav-dropdown-menu a.active::after {
+        display: none;
+      }
+
+      .nav-subdropdown {
+        position: relative;
+      }
+
+      .nav-subdropdown-toggle {
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+
+      .nav-subdropdown-toggle > a {
+        flex: 1;
+      }
+
+      .nav-subdropdown-btn {
+        display: inline-flex;
+        flex: 0 0 38px;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        margin-right: 0.4rem;
+        border: 0;
+        background: transparent;
+        color: var(--text-dark);
+        cursor: pointer;
+      }
+
+      .nav-subdropdown-btn i {
+        font-size: 0.72rem;
+        transition: transform 0.25s ease;
+      }
+
+      .nav-subdropdown.open > .nav-subdropdown-toggle .nav-subdropdown-btn i {
+        transform: rotate(90deg);
+      }
+
+      .nav-subdropdown-menu {
+        position: absolute;
+        top: -0.85rem;
+        left: calc(100% - 0.35rem);
+        min-width: 190px;
+        padding: 0.7rem 0;
+        list-style: none;
+        background: var(--white);
+        border: 1px solid rgba(201, 169, 97, 0.18);
+        border-radius: 14px;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(8px);
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease,
+          visibility 0.2s ease;
+        z-index: 1006;
+      }
+
+      .nav-subdropdown:hover > .nav-subdropdown-menu,
+      .nav-subdropdown:focus-within > .nav-subdropdown-menu,
+      .nav-subdropdown.open > .nav-subdropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+      }
+
+      .nav-subdropdown-menu a {
+        white-space: nowrap;
+      }
+
+      /* Footer alignment with the shared site footer used on the homepage and other public pages */
+      .payment-options-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.75rem;
+        flex-wrap: nowrap;
+        margin-bottom: 0.9rem;
+      }
+
+      .payment-footer-section {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .payment-option-item {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 56px;
+        height: 32px;
+      }
+
+      .payment-option-item img {
+        display: block;
+        max-width: 100%;
+        height: 32px;
+        width: auto;
+      }
+
+      .payment-option-item.cash img {
+        height: 30px;
+      }
+
+      .payment-footer-note {
+        font-size: 0.92rem;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.62);
+      }
+
+      .footer-contact-section .footer-contact-items {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+        flex-wrap: nowrap;
+      }
+
+      .footer-contact-section .footer-contact-items p {
+        display: inline-flex;
+        align-items: center;
+        margin-bottom: 0;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
+
+      .footer-contact-section .footer-contact-items i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary);
+        margin-right: 8px;
+        width: 14px;
+        line-height: 1;
+      }
+
+      /* Keep the tablet footer inside the viewport without changing desktop. */
+      @media (min-width: 769px) and (max-width: 1100px) {
+        .footer-contact-section .footer-contact-items {
+          gap: 0.9rem;
+          flex-wrap: wrap;
+        }
+
+        .footer-contact-section .footer-contact-items p {
+          white-space: normal;
+        }
+      }
+
+      /* Preserve the existing country control appearance now that it is a button. */
+      .country-flag-display {
+        appearance: none;
+        border: 0;
+        border-right: 1px solid rgba(201, 169, 97, 0.2);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+      }
+
+      @media (max-width: 768px) {
+        .nav-dropdown {
+          width: 100%;
+        }
+
+        .nav-dropdown-toggle {
+          width: 100%;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .nav-dropdown-menu {
+          position: static;
+          min-width: 0;
+          width: 100%;
+          margin-top: 0.75rem;
+          padding: 0.5rem 0;
+          border-radius: 14px;
+          box-shadow: none;
+          background: var(--bg-light);
+          border: 1px solid rgba(201, 169, 97, 0.12);
+          display: none;
+          opacity: 1;
+          visibility: visible;
+          transform: none;
+        }
+
+        .nav-dropdown.open .nav-dropdown-menu {
+          display: block;
+        }
+
+        .nav-dropdown-menu a {
+          text-align: center;
+          padding: 0.8rem 1rem;
+        }
+
+        .nav-subdropdown-toggle {
+          justify-content: center;
+        }
+
+        .nav-subdropdown-toggle > a {
+          flex: 0 1 auto;
+          padding-left: 2.4rem;
+        }
+
+        .nav-subdropdown-btn {
+          flex-basis: 34px;
+          width: 34px;
+          height: 34px;
+          margin-right: 0;
+        }
+
+        .nav-subdropdown-menu {
+          position: static;
+          display: none;
+          min-width: 0;
+          width: calc(100% - 2rem);
+          margin: 0.15rem 1rem 0.5rem;
+          padding: 0.25rem 0;
+          background: var(--white);
+          border: 0;
+          border-left: 2px solid rgba(201, 169, 97, 0.35);
+          border-radius: 0;
+          box-shadow: none;
+          opacity: 1;
+          visibility: visible;
+          transform: none;
+        }
+
+        .nav-subdropdown.open > .nav-subdropdown-menu {
+          display: block;
+        }
+
+        .nav-subdropdown-menu a {
+          padding: 0.7rem 1rem;
+          font-size: 0.88rem;
+        }
+
+        .payment-footer-section {
+          align-items: center;
+          text-align: center;
+        }
+
+        .footer-contact-section .footer-contact-items {
+          justify-content: center;
+          gap: 0.9rem;
+          flex-wrap: wrap;
+        }
+
+        .payment-options-footer {
+          justify-content: center;
+          gap: 0.65rem;
+          flex-wrap: nowrap;
+        }
+
+        .payment-option-item {
+          min-width: 48px;
+          height: 28px;
+        }
+
+        .payment-option-item img {
+          height: 28px;
+        }
+
+        .payment-option-item.cash img {
+          height: 25px;
+        }
+      }
+
+      /* ── SEAT OPTIONS ── */
+      .seat-options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .seat-option-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        background: var(--bg-light);
+        border-radius: 12px;
+        border: 2px solid rgba(201, 169, 97, 0.2);
+        transition: border-color 0.3s ease;
+      }
+
+      .seat-option-card:has(.seat-count:not(:empty)):not(:has([value="0"])) {
+        border-color: var(--secondary);
+      }
+
+      .seat-option-icon {
+        font-size: 2rem;
+        flex-shrink: 0;
+        line-height: 1;
+      }
+
+      .seat-option-info {
+        flex: 1;
+      }
+
+      .seat-option-info strong {
+        display: block;
+        font-size: 0.95rem;
+        color: var(--primary);
+        margin-bottom: 0.2rem;
+      }
+
+      .seat-option-info p {
+        font-size: 0.82rem;
+        color: var(--text-light);
+        margin: 0;
+      }
+
+      .seat-counter {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-shrink: 0;
+      }
+
+      .seat-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid rgba(201, 169, 97, 0.4);
+        background: var(--white);
+        color: var(--primary);
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        line-height: 1;
+        font-family: "Inter", sans-serif;
+      }
+
+      .seat-btn:hover {
+        background: var(--secondary);
+        border-color: var(--secondary);
+        color: var(--white);
+      }
+
+      .seat-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .seat-btn:disabled:hover {
+        background: var(--white);
+        border-color: rgba(201, 169, 97, 0.4);
+        color: var(--primary);
+      }
+
+      .seat-count {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary);
+        min-width: 24px;
+        text-align: center;
+        font-family: "Playfair Display", serif;
+        transition: color 0.2s ease;
+      }
+
+      .seat-count.active {
+        color: var(--secondary);
+      }
+
+      .seat-notice {
+        font-size: 0.82rem;
+        color: var(--text-light);
+        margin: 0;
+        text-align: center;
+        font-style: italic;
+      }
+
+      @media (max-width: 600px) {
+        .seat-options-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="css/header-logo.css" />
+    <link rel="stylesheet" href="/css/consent.css" />
+    <script src="/js/consent.js"></script>
+  </head>
+  <body>
+    <!-- ════════════════════════════════════
+        NAVIGATION
+    ════════════════════════════════════ -->
+    <nav id="navbar">
+      <div class="nav-container">
+        <a href="/" class="logo">
+          <img
+            src="images/paris-private-airport-transfer-logo-cropped.png"
+            alt="Paris Private Airport Transfer"
+            width="1075"
+            height="465"
+          />
+        </a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          ☰
+        </button>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="/">Home</a></li>
+          <li class="nav-dropdown">
+            <div class="nav-dropdown-toggle">
+              <a href="/services">Services</a>
+              <button
+                type="button"
+                class="nav-dropdown-btn"
+                aria-label="Open service pages"
+                aria-expanded="false"
+              >
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+            </div>
+            <ul class="nav-dropdown-menu">
+              <li><a href="/services">All Services</a></li>
+              <li><a href="/airport">Airport Transfer</a></li>
+              <li class="nav-subdropdown">
+                <div class="nav-subdropdown-toggle">
+                  <a href="/disneyland">Disneyland Experience</a>
+                  <button
+                    type="button"
+                    class="nav-subdropdown-btn"
+                    aria-label="Open Disneyland pages"
+                    aria-expanded="false"
+                  >
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <ul class="nav-subdropdown-menu">
+                  <li>
+                    <a href="/cdg-to-disneyland">CDG to Disneyland</a>
+                  </li>
+                  <li>
+                    <a href="/orly-to-disneyland">Orly to Disneyland</a>
+                  </li>
+                  <li>
+                    <a href="/beauvais-to-disneyland"
+                      >Beauvais to Disneyland</a
+                    >
+                  </li><li><a href="/paris-to-disneyland">Paris to Disneyland</a></li>
+                </ul>
+              </li>
+              <li class="nav-subdropdown">
+                <div class="nav-subdropdown-toggle">
+                  <a href="/long-distance">Long Distance</a>
+                  <button
+                    type="button"
+                    class="nav-subdropdown-btn"
+                    aria-label="Open Long Distance pages"
+                    aria-expanded="false"
+                  >
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <ul class="nav-subdropdown-menu">
+                  <li><a href="/paris-to-normandy">Normandy</a></li>
+                  <li><a href="/paris-to-champagne">Champagne</a></li>
+                  <li><a href="/paris-to-loire-valley">Loire Valley</a></li>
+                </ul>
+              </li>
+              <li><a href="/hourly">Hourly Service</a></li>
+            </ul>
+          </li>
+          <li><a href="/flotte">Our Fleet</a></li>
+          <li><a href="/manage-booking">Manage Booking</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li>
+            <a href="/reservation" class="cta-button active">Book Now</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header booking-page-header">
+      <div class="container">
+        <h1>Book Your Transfer</h1>
+        <p>Calculate your fare and book in just a few clicks</p>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         PRICE CALCULATOR
+    ════════════════════════════════════ -->
+    <section class="calculator-section">
+      <div class="container">
+        <div class="price-calculator">
+          <h2>Instant Price Calculator</h2>
+          <p class="calculator-subtitle">
+            Get an immediate fare estimate for your trip
+          </p>
+
+          <!-- Toggle One Way / Round Trip -->
+          <div class="trip-toggle">
+            <button
+              type="button"
+              class="trip-toggle-btn active"
+              id="calcOneWayBtn"
+            >
+              <i class="fa-solid fa-arrow-right"></i> One Way
+            </button>
+            <button type="button" class="trip-toggle-btn" id="calcRoundTripBtn">
+              <i class="fa-solid fa-arrows-rotate"></i> Round Trip
+            </button>
+          </div>
+
+          <div class="calculator-content">
+            <div class="calc-row">
+              <div class="calc-group">
+                <label for="calc-service">Service type</label>
+                <select id="calc-service">
+                  <optgroup label="Airports → Paris">
+                    <option value="cdg-paris">CDG → Paris</option>
+                    <option value="orly-paris">Orly → Paris</option>
+                    <option value="beauvais-paris">Beauvais → Paris</option>
+                  </optgroup>
+                  <optgroup label="Paris → Airports">
+                    <option value="cdg-paris">Paris → CDG</option>
+                    <option value="orly-paris">Paris → Orly</option>
+                    <option value="beauvais-paris">Paris → Beauvais</option>
+                  </optgroup>
+                  <optgroup label="Airports → Disneyland">
+                    <option value="cdg-disney">CDG → Disneyland</option>
+                    <option value="orly-disney">Orly → Disneyland</option>
+                    <option value="beauvais-disney">
+                      Beauvais → Disneyland
+                    </option>
+                    <option value="paris-disney">Paris → Disneyland</option>
+                  </optgroup>
+                  <optgroup label="Disneyland → Airports">
+                    <option value="cdg-disney">Disneyland → CDG</option>
+                    <option value="orly-disney">Disneyland → Orly</option>
+                    <option value="beauvais-disney">
+                      Disneyland → Beauvais
+                    </option>
+                    <option value="paris-disney">Disneyland → Paris</option>
+                  </optgroup>
+                  <optgroup label="Airport ↔ Train Stations">
+                    <option value="cdg-orly">CDG → Orly</option>
+                    <option value="cdg-beauvais">CDG → Beauvais</option>
+                    <option value="beauvais-orly">Beauvais → Orly</option>
+                    <option value="paris-gares">Paris → Train Stations</option>
+                  </optgroup>
+                  <optgroup label="Train Stations ↔ Airports">
+                    <option value="cdg-orly">Orly → CDG</option>
+                    <option value="cdg-beauvais">Beauvais → CDG</option>
+                    <option value="beauvais-orly">Orly → Beauvais</option>
+                    <option value="paris-gares">Train Stations → Paris</option>
+                  </optgroup>
+                  <optgroup label="Hourly Service">
+                    <option value="dispo-4h">Hourly Service – 4h (280€)</option>
+                    <option value="dispo-8h">Hourly Service – 8h (520€)</option>
+                    <option value="dispo-10h">
+                      Hourly Service – 10h (600€)
+                    </option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="calc-group">
+                <label for="calc-passengers">Number of passengers</label>
+                <select id="calc-passengers">
+                  <option value="1">1 person</option>
+                  <option value="2">2 people</option>
+                  <option value="3">3 people</option>
+                  <option value="4">4 people</option>
+                  <option value="5">5 people</option>
+                  <option value="6">6 people</option>
+                  <option value="7">7 people</option>
+                  <option value="8">8 people</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="calc-result">
+              <div class="calc-result-content">
+                <span class="calc-result-label">Estimated Total Fare</span>
+                <span class="calc-price" id="calcPrice">80€</span>
+              </div>
+              <p class="calc-price-sub" id="calcPriceSub"></p>
+              <p class="calc-notice">
+                All-inclusive price including driver, fuel, tolls and insurance
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         BOOKING FORM
+    ════════════════════════════════════ -->
+    <section class="booking-section">
+      <div class="container">
+        <div class="booking-wrapper">
+          <div class="booking-header">
+            <h2>Booking Form</h2>
+            <p>Complete the details below to request your booking, then confirm it using the link in your email.</p>
+          </div>
+
+          <!-- Messages de retour -->
+          <div
+            class="success-message"
+            id="bookingSuccess"
+            role="status"
+            aria-live="polite"
+          >
+            <strong>✓ Booking request received — confirmation required</strong><br />
+            Your reference number:
+            <strong
+              id="bookingSuccessRef"
+              style="font-size: 1.1rem; letter-spacing: 1px; color: #155724"
+              >—</strong
+            ><br />
+            <span style="font-size: 0.9rem"
+              >Check your inbox and spam folder for the confirmation email. Open its link, then click to confirm your booking on the page that opens. Your booking remains pending until you complete this step. Keep your reference for any follow-up.</span
+            >
+          </div>
+          <div
+            id="bookingError"
+            role="alert"
+            aria-live="assertive"
+            style="
+              display: none;
+              background: #f8d7da;
+              color: #721c24;
+              padding: 1rem;
+              border-radius: 8px;
+              margin-bottom: 2rem;
+              border: 1px solid #f5c6cb;
+            "
+          >
+            ✗ An error occurred. Please contact us directly by phone or email.
+          </div>
+
+          <form id="bookingForm" class="booking-form" novalidate>
+            <!-- ── ADMIN PANEL ── -->
+            <div class="admin-panel" id="adminPanel" hidden>
+              <h4><i class="fa-solid fa-shield-halved"></i> Admin Mode</h4>
+              <div id="adminBar" class="admin-session-status">
+                <span>Connected as administrator</span>
+                <button id="adminToggleBtn" type="button" class="admin-apply-btn reset">Sign out</button>
+              </div>
+              <p>Calculated price: <strong id="adminCalculatedPrice">0€</strong></p>
+
+              <div class="admin-grid">
+                <div class="admin-field">
+                  <label>Booking for (internal note)</label>
+                  <input
+                    type="text"
+                    id="adminClientNote" maxlength="2000"
+                    placeholder="Ex: J. Smith – phone booking"
+                  />
+                </div>
+                <div class="admin-field">
+                  <label>Internal reference</label>
+                  <input
+                    type="text"
+                    id="adminRef" maxlength="150"
+                    placeholder="Ex: REF-2026-042"
+                  />
+                </div>
+                <div class="admin-field">
+                  <label>Override reason</label>
+                  <input
+                    type="text"
+                    id="adminOverrideReason"
+                    placeholder="Ex: Courtesy adjustment"
+                  />
+                </div>
+              </div>
+
+              <!-- Custom Price -->
+              <div style="margin-top: 1.5rem">
+                <span class="admin-section-label">
+                  <i
+                    class="fa-solid fa-euro-sign"
+                    style="color: var(--secondary); margin-right: 0.3rem"
+                  ></i>
+                  Custom price (overrides automatic calculation)
+                </span>
+                <div class="admin-price-row">
+                  <div class="admin-price-input">
+                    <input
+                      type="number"
+                      id="adminCustomPrice"
+                      aria-describedby="adminServicePriceError"
+                      placeholder="0"
+                      min="0"
+                      step="1"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="admin-apply-btn"
+                    onclick="applyAdminPrice()"
+                  >
+                    <i class="fa-solid fa-check"></i> Apply
+                  </button>
+                  <button
+                    type="button"
+                    class="admin-apply-btn reset"
+                    onclick="resetAdminPrice()"
+                  >
+                    <i class="fa-solid fa-xmark"></i> Reset
+                  </button>
+                </div>
+              </div>
+
+              <p id="adminServicePriceError" role="alert" hidden></p>
+
+              <!-- Promotion -->
+              <div style="margin-top: 1.5rem">
+                <span class="admin-section-label">
+                  <i
+                    class="fa-solid fa-tag"
+                    style="color: var(--secondary); margin-right: 0.3rem"
+                  ></i>
+                  Promotion / Discount
+                </span>
+                <div class="admin-promo">
+                  <input
+                    type="number"
+                    id="adminPromoAmount"
+                    placeholder="Amount (e.g. 20)"
+                    min="0"
+                    step="1"
+                  />
+                  <select id="adminPromoType" class="admin-promo-type">
+                    <option value="fixed">€ (fixed amount)</option>
+                    <option value="percent">% (percentage)</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="adminPromoLabel"
+                    placeholder="Label (e.g. VIP Code)"
+                  />
+                  <button
+                    type="button"
+                    class="admin-apply-btn"
+                    onclick="applyPromo()"
+                  >
+                    <i class="fa-solid fa-percent"></i> Apply
+                  </button>
+                </div>
+              </div>
+
+              <div class="admin-override-notice" id="adminOverrideNotice">
+                <i class="fa-solid fa-circle-info"></i>
+                <span id="adminOverrideText"></span>
+              </div>
+            </div>
+
+            <!-- ── PERSONAL INFORMATION ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i class="fa-solid fa-user" style="color: var(--secondary)"></i>
+                Your Information
+              </h3>
+
+              <div class="form-row">
+                <div class="form-group" id="fg-name">
+                  <label for="name">Full Name *</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    placeholder="John Smith"
+                    autocomplete="name"
+                  />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please enter
+                    your full name
+                  </div>
+                </div>
+                <div class="form-group" id="fg-email">
+                  <label for="email">Email *</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    placeholder="john.smith@email.com"
+                    autocomplete="email"
+                  />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Invalid email
+                    address
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phone with country code -->
+              <div class="form-group" id="fg-phone">
+                <label>Phone *</label>
+                <div class="phone-input-wrapper" id="phoneWrapper">
+                  <div class="country-select-wrapper">
+                    <button
+                      type="button"
+                      class="country-flag-display"
+                      id="countryFlagDisplay"
+                      aria-label="Choose country calling code"
+                      aria-expanded="false"
+                      aria-controls="countryDropdown"
+                    >
+                      <span class="flag" id="selectedFlag">🇫🇷</span>
+                      <span class="dial" id="selectedDial">+33</span>
+                      <i class="fa-solid fa-chevron-down chevron"></i>
+                    </button>
+                    <div class="country-dropdown" id="countryDropdown">
+                      <div class="country-list" id="countryList"></div>
+                    </div>
+                  </div>
+                  <input
+                    type="tel"
+                    id="phone-number"
+                    name="phone"
+                    placeholder="6 12 34 56 78"
+                    autocomplete="tel-national"
+                  />
+                </div>
+                <input type="hidden" id="phone-full" name="phone_full" />
+                <div class="field-error" id="phoneError">
+                  <i class="fa-solid fa-circle-exclamation"></i> Invalid phone
+                  number
+                </div>
+              </div>
+            </div>
+
+            <!-- ── TRIP DETAILS ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i class="fa-solid fa-car" style="color: var(--secondary)"></i>
+                Trip Details
+              </h3>
+
+              <div class="form-group" id="fg-service">
+                <label for="service">Service Type *</label>
+                <select id="service" name="service" required>
+                  <option value="">Select a service</option>
+                  <optgroup label="Airports → Paris">
+                    <option value="cdg-paris">CDG → Paris</option>
+                    <option value="orly-paris">Orly → Paris</option>
+                    <option value="beauvais-paris">Beauvais → Paris</option>
+                  </optgroup>
+                  <optgroup label="Paris → Airports">
+                    <option value="cdg-paris">Paris → CDG</option>
+                    <option value="orly-paris">Paris → Orly</option>
+                    <option value="beauvais-paris">Paris → Beauvais</option>
+                  </optgroup>
+                  <optgroup label="Airports → Disneyland">
+                    <option value="cdg-disney">CDG → Disneyland</option>
+                    <option value="orly-disney">Orly → Disneyland</option>
+                    <option value="beauvais-disney">
+                      Beauvais → Disneyland
+                    </option>
+                    <option value="paris-disney">Paris → Disneyland</option>
+                  </optgroup>
+                  <optgroup label="Disneyland → Airports">
+                    <option value="cdg-disney">Disneyland → CDG</option>
+                    <option value="orly-disney">Disneyland → Orly</option>
+                    <option value="beauvais-disney">
+                      Disneyland → Beauvais
+                    </option>
+                    <option value="paris-disney">Disneyland → Paris</option>
+                  </optgroup>
+                  <optgroup label="Airport ↔ Train Stations">
+                    <option value="cdg-orly">CDG → Orly</option>
+                    <option value="cdg-beauvais">CDG → Beauvais</option>
+                    <option value="beauvais-orly">Beauvais → Orly</option>
+                    <option value="paris-gares">Paris → Train Stations</option>
+                  </optgroup>
+                  <optgroup label="Train Stations ↔ Airports">
+                    <option value="cdg-orly">Orly → CDG</option>
+                    <option value="cdg-beauvais">Beauvais → CDG</option>
+                    <option value="beauvais-orly">Orly → Beauvais</option>
+                  </optgroup>
+                  <optgroup label="Train Stations ↔ Paris">
+                    <option value="paris-gares">Train Stations → Paris</option>
+                  </optgroup>
+                  <optgroup label="Hourly Service">
+                    <option value="dispo-4h">Hourly Service – 4h</option>
+                    <option value="dispo-8h">Hourly Service – 8h</option>
+                    <option value="dispo-10h">Hourly Service – 10h</option>
+                  </optgroup>
+                  <option id="adminOtherService" value="other" hidden disabled>Other</option>
+                </select>
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i> Please select a
+                  service
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group" id="fg-pickup">
+                  <label for="pickup">Pickup address *</label>
+                  <input
+                    type="text"
+                    id="pickup"
+                    name="pickup"
+                    required
+                    placeholder="12 Rue de Rivoli, 75001 Paris"
+                  />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please
+                    provide a pickup address
+                  </div>
+                </div>
+                <div class="form-group" id="fg-destination">
+                  <label for="destination">Destination *</label>
+                  <input
+                    type="text"
+                    id="destination"
+                    name="destination"
+                    required
+                    placeholder="CDG Airport Terminal 2E"
+                  />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please
+                    provide a destination
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group" id="fg-date">
+                  <label for="date">Transfer date *</label>
+                  <input type="date" id="date" name="date" required />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please select
+                    a valid date
+                  </div>
+                </div>
+                <div class="form-group" id="fg-time">
+                  <label for="time">Pickup time *</label>
+                  <input type="time" id="time" name="time" required />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please enter
+                    a pickup time
+                  </div>
+                </div>
+              </div>
+
+              <!-- Round Trip Checkbox -->
+              <div class="roundtrip-wrapper" id="rtWrapper">
+                <label class="roundtrip-label" for="roundtrip">
+                  <input
+                    type="checkbox"
+                    id="roundtrip"
+                    name="roundtrip"
+                    value="RoundTrip"
+                  />
+                  <div class="rt-check" id="rtCheck">
+                    <i class="fa-solid fa-check"></i>
+                  </div>
+                  <div class="rt-text">
+                    <strong>
+                      <i
+                        class="fa-solid fa-arrows-rotate"
+                        style="color: var(--secondary); margin-right: 0.4rem"
+                      ></i>
+                      Round Trip
+                    </strong>
+                    <span
+                      >Check to include the return — fare will be multiplied by
+                      2</span
+                    >
+                  </div>
+                  <div class="rt-badge" id="rtBadge">×2</div>
+                </label>
+              </div>
+
+              <!-- Return date fields (hidden by default) -->
+              <div
+                class="form-row"
+                id="returnDateRow"
+                style="display: none; margin-top: 1rem"
+              >
+                <div class="form-group" id="fg-return-date">
+                  <label for="return-date">Return date *</label>
+                  <input type="date" id="return-date" name="return_date" />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please select
+                    a return date
+                  </div>
+                </div>
+                <div class="form-group" id="fg-return-time">
+                  <label for="return-time">Return time *</label>
+                  <input type="time" id="return-time" name="return_time" />
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please enter
+                    a return time
+                  </div>
+                </div>
+              </div>
+
+              <!-- Passengers -->
+              <div class="form-row" style="margin-top: 1rem">
+                <div class="form-group" id="fg-passengers">
+                  <label for="passengers">Number of adults *</label>
+                  <select id="passengers" name="passengers" required>
+                    <option value="">Select</option>
+                    <option value="1">1 adult</option>
+                    <option value="2">2 adults</option>
+                    <option value="3">3 adults</option>
+                    <option value="4">4 adults</option>
+                    <option value="5">5 adults</option>
+                    <option value="6">6 adults</option>
+                    <option value="7">7 adults</option>
+                    <option value="8">8 adults</option>
+                  </select>
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please
+                    indicate the number of adults
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="child">Number of children</label>
+                  <select id="child" name="child">
+                    <option value="0">No children</option>
+                    <option value="1">1 child</option>
+                    <option value="2">2 children</option>
+                    <option value="3">3 children</option>
+                    <option value="4">4 children</option>
+                    <option value="5">5 children</option>
+                    <option value="6">6 children</option>
+                    <option value="7">7 children</option>
+                    <option value="8">8 children</option>
+                  </select>
+                </div>
+                <div class="form-group" id="fg-luggage">
+                  <label for="luggage">Number of bags *</label>
+                  <select id="luggage" name="luggage" required>
+                    <option value="">Select</option>
+                    <option value="No bags">No bags</option>
+                    <option value="1 bag">1 bag</option>
+                    <option value="2 bags">2 bags</option>
+                    <option value="3 bags">3 bags</option>
+                    <option value="4 bags">4 bags</option>
+                    <option value="5+ bags">5+ bags</option>
+                  </select>
+                  <div class="field-error">
+                    <i class="fa-solid fa-circle-exclamation"></i> Please
+                    indicate the number of bags
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── VEHICLE SELECTION ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i class="fa-solid fa-car" style="color: var(--secondary)"></i>
+                Vehicle Selection
+              </h3>
+              <div class="form-group" id="fg-vehicle">
+                <label for="vehicle-type">Vehicle type *</label>
+                <select id="vehicle-type" name="vehicle_type" required>
+                  <option value="">Select a vehicle</option>
+                  <option value="Premium Sedan">
+                    Premium Sedan (1-2 people)
+                  </option>
+                  <option value="Luxury Van 7 seats">
+                    Luxury Van 7 seats (3-6 people)
+                  </option>
+                </select>
+                <div class="vehicle-hint" id="vehicleHint">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span id="vehicleHintText"></span>
+                </div>
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i> Please select a
+                  vehicle
+                </div>
+              </div>
+            </div>
+
+            <!-- ── FLIGHT INFORMATION ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i
+                  class="fa-solid fa-plane"
+                  style="color: var(--secondary)"
+                ></i>
+                Flight Information
+              </h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="flight">Flight number</label>
+                  <input
+                    type="text"
+                    id="flight"
+                    name="flight"
+                    placeholder="Ex: AF1234"
+                  />
+                  <small style="color: var(--text-light)"
+                    >We will track your flight in real time</small
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="terminal">Terminal</label>
+                  <input
+                    type="text"
+                    id="terminal"
+                    name="terminal"
+                    placeholder="Ex: Terminal 2E"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- ── ADDITIONAL OPTIONS ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i class="fa-solid fa-star" style="color: var(--secondary)"></i>
+                Additional Options
+              </h3>
+
+              <div class="seat-options-grid">
+                <!-- Baby Seat -->
+                <div class="seat-option-card">
+                  <div class="seat-option-icon">
+                    <i
+                      class="fa-solid fa-baby"
+                      style="color: var(--secondary)"
+                    ></i>
+                  </div>
+                  <div class="seat-option-info">
+                    <strong>Baby Seat</strong>
+                    <p>1 month – 2 years</p>
+                  </div>
+                  <div class="seat-counter">
+                    <button
+                      type="button"
+                      class="seat-btn minus"
+                      onclick="changeSeat('baby', -1)"
+                      aria-label="Decrease"
+                    >
+                      −
+                    </button>
+                    <span class="seat-count" id="baby-count">0</span>
+                    <button
+                      type="button"
+                      class="seat-btn plus"
+                      onclick="changeSeat('baby', 1)"
+                      aria-label="Increase"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <input
+                    type="hidden"
+                    id="baby-seat-input"
+                    name="baby_seat"
+                    value="0"
+                  />
+                </div>
+
+                <!-- Child Seat -->
+                <div class="seat-option-card">
+                  <div class="seat-option-icon">
+                    <i
+                      class="fa-solid fa-child"
+                      style="color: var(--secondary)"
+                    ></i>
+                  </div>
+                  <div class="seat-option-info">
+                    <strong>Child Seat / Booster</strong>
+                    <p>3 years – 6 years</p>
+                  </div>
+                  <div class="seat-counter">
+                    <button
+                      type="button"
+                      class="seat-btn minus"
+                      onclick="changeSeat('child-seat', -1)"
+                      aria-label="Decrease"
+                    >
+                      −
+                    </button>
+                    <span class="seat-count" id="child-seat-count">0</span>
+                    <button
+                      type="button"
+                      class="seat-btn plus"
+                      onclick="changeSeat('child-seat', 1)"
+                      aria-label="Increase"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <input
+                    type="hidden"
+                    id="child-seat-input"
+                    name="child_seat"
+                    value="0"
+                  />
+                </div>
+              </div>
+
+              <p class="seat-notice">
+                Maximum 4 per type · Included in your vehicle at no extra charge
+              </p>
+            </div>
+
+            <!-- ── SPECIAL REQUESTS ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i
+                  class="fa-solid fa-comment"
+                  style="color: var(--secondary)"
+                ></i>
+                Special Requests
+              </h3>
+              <div class="form-group">
+                <label for="notes">Additional information</label>
+                <textarea
+                  id="notes"
+                  name="notes"
+                  rows="4"
+                  placeholder="Example: wheelchair assistance, number and ages of children, large luggage…"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- ── PRICE SUMMARY ── -->
+            <div class="price-summary" id="priceSummary">
+              <h4><i class="fa-solid fa-receipt"></i> Price Summary</h4>
+              <div class="price-line" id="summaryBase">
+                <span class="label">Base fare</span>
+                <span class="value" id="summaryBaseVal">—</span>
+              </div>
+              <div
+                class="price-line"
+                id="summaryPassengers"
+                style="display: none"
+              >
+                <span class="label"
+                  ><i
+                    class="fa-solid fa-users"
+                    style="
+                      margin-right: 0.4rem;
+                      color: rgba(255, 255, 255, 0.5);
+                      font-size: 0.8rem;
+                    "
+                  ></i
+                  >Number of passengers</span
+                >
+                <span class="value" id="summaryPassengersVal">—</span>
+              </div>
+              <div
+                class="price-line"
+                id="summaryRoundtrip"
+                style="display: none"
+              >
+                <span class="label">Round Trip (×2)</span>
+                <span class="value" id="summaryRoundtripVal">—</span>
+              </div>
+              <div
+                class="price-line night"
+                id="summaryNight"
+                style="display: none"
+              >
+                <span class="label">
+                  <i class="fa-solid fa-moon" style="margin-right: 0.4rem"></i
+                  >Night surcharge (22:00–06:00)
+                </span>
+                <span class="value" id="summaryNightVal">+10€</span>
+              </div>
+              <div
+                class="price-line discount"
+                id="summaryDiscount"
+                style="display: none"
+              >
+                <span class="label">
+                  <i class="fa-solid fa-tag" style="margin-right: 0.4rem"></i>
+                  <span id="summaryDiscountLabel">Discount</span>
+                </span>
+                <span class="value" id="summaryDiscountVal">—</span>
+              </div>
+              <div class="price-line total">
+                <span class="label">Total (incl. VAT)</span>
+                <span class="value" id="summaryTotal">—</span>
+              </div>
+              <div class="night-warning" id="nightWarning">
+                <i class="fa-solid fa-moon"></i>
+                <span
+                  >Pickup between 22:00 and 06:00 — 10€ night surcharge applied
+                  automatically</span
+                >
+              </div>
+            </div>
+
+            <!-- ── PAYMENT METHOD ── -->
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i
+                  class="fa-solid fa-credit-card"
+                  style="color: var(--secondary)"
+                ></i>
+                Payment Method
+              </h3>
+
+              <div class="payment-options">
+                <!-- Cash payment -->
+                <label class="payment-option">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="Cash to driver"
+                    checked
+                  />
+                  <div class="payment-content">
+                    <strong>
+                      <i
+                        class="fa-solid fa-money-bill-wave"
+                        style="color: var(--secondary)"
+                      ></i>
+                      Cash payment
+                    </strong>
+                    <p>Paid directly to the driver</p>
+                  </div>
+                </label>
+
+                <!-- Card payment -->
+                <label class="payment-option">
+                  <input type="radio" name="payment" value="Card to driver" />
+                  <div class="payment-content">
+                    <strong>
+                      <i
+                        class="fa-solid fa-credit-card"
+                        style="color: var(--secondary)"
+                      ></i>
+                      Card payment
+                    </strong>
+                    <p>Paid directly to the driver</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- ── TERMS ACCEPTANCE ── -->
+            <div class="form-section">
+              <div class="form-group" id="fg-cgv">
+                <label class="checkbox-label terms-label">
+                  <input type="checkbox" id="cgv" name="cgv" required />
+                  <span>
+                    I accept the
+                    <a href="/pages/cgv" target="_blank"
+                      >terms and conditions</a
+                    >
+                    and the
+                    <a href="/pages/confidentialite" target="_blank"
+                      >privacy policy</a
+                    >
+                    *
+                  </span>
+                </label>
+                <div class="field-error">
+                  <i class="fa-solid fa-circle-exclamation"></i> You must accept
+                  the terms to continue
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="submit-btn submit-btn-large"
+              id="submitBtn"
+            >
+              <span>Send Booking Request</span>
+            </button>
+
+            <div class="form-footer-info">
+              <p>
+                ✓ Your reference number is shown once your request is received
+              </p>
+              <p>✓ Confirm your booking using the link in your email</p>
+              <p>✓ Free change until 12h before departure</p>
+              <p>✓ Free cancellation until 24h before departure</p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         RÉASSURANCE
+    ════════════════════════════════════ -->
+    <section class="reassurance-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Why Book with Paris Private Airport Transfer?</h2>
+        </div>
+        <div class="reassurance-grid">
+          <div class="reassurance-item">
+            <div class="reassurance-icon">
+              <i class="fa-solid fa-bolt" style="color: var(--secondary)"></i>
+            </div>
+            <h3>Email Confirmation Required</h3>
+            <p>
+              After submitting your request, open the link in your confirmation email and click to confirm on the page that opens.
+            </p>
+          </div>
+          <div class="reassurance-item">
+            <div class="reassurance-icon">
+              <i class="fa-solid fa-lock" style="color: var(--secondary)"></i>
+            </div>
+            <h3>Secure Data</h3>
+            <p>Your personal details are processed confidentially</p>
+          </div>
+          <div class="reassurance-item">
+            <div class="reassurance-icon">
+              <i
+                class="fa-solid fa-sack-dollar"
+                style="color: var(--secondary)"
+              ></i>
+            </div>
+            <h3>Transparent Pricing</h3>
+            <p>
+              All-inclusive pricing with no hidden fees: driver, fuel, tolls and
+              insurance included
+            </p>
+          </div>
+          <div class="reassurance-item">
+            <div class="reassurance-icon">
+              <i
+                class="fa-solid fa-arrows-rotate"
+                style="color: var(--secondary)"
+              ></i>
+            </div>
+            <h3>Maximum Flexibility</h3>
+            <p>
+              Free changes up to 12h before departure, free cancellation up to
+              24h before departure
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-content">
+          <h2>Need Help with Your Booking?</h2>
+          <p>Our team is available 24/7 to assist you</p>
+          <div
+            style="
+              display: flex;
+              gap: 1.5rem;
+              justify-content: center;
+              flex-wrap: wrap;
+            "
+          >
+            <a href="tel:0767737309" class="btn-primary btn-large">
+              <i class="fa-solid fa-phone"></i> Call Now
+            </a>
+            <a href="/contact" class="btn-secondary btn-large">
+              <i class="fa-solid fa-envelope"></i> Contact Us
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         FOOTER
+    ════════════════════════════════════ -->
+    <footer>
+      <div class="container">
+        <div class="footer-content">
+          <!-- Footer Brand -->
+          <div class="footer-section">
+            <h3>Paris Private Airport Transfer</h3>
+
+            <p>
+              Premium chauffeur services from Paris to airports, Disneyland,
+              Normandy and beyond.
+            </p>
+
+            <p style="margin-top: 1rem">Service available 24/7</p>
+          </div>
+
+          <!-- Footer Services -->
+          <div class="footer-section">
+            <h3>Services</h3>
+
+            <a href="/services#aeroports"> Airport Transfers </a>
+
+            <a href="/services#disneyland"> Disneyland Experience </a>
+
+            <a href="/services#longue-distance"> Long Distance </a>
+
+            <a href="/hourly"> Hourly Service </a>
+
+            <a href="/flotte"> Our Vehicles </a>
+          </div>
+
+          <!-- Footer Infos -->
+          <div class="footer-section">
+            <h3>Information</h3>
+
+            <a href="/contact">Contact</a>
+
+            <a href="/pages/cgv"> Terms and Conditions </a>
+
+            <a href="/pages/confidentialite"> Privacy </a>
+          </div>
+
+          <div class="footer-section payment-footer-section">
+            <h3>Payment Options</h3>
+
+            <div class="payment-options-footer">
+              <span class="payment-option-item">
+                <img
+                  src="assets/payment/visa.svg"
+                  alt="Visa"
+                  width="1000"
+                  height="324"
+                />
+              </span>
+              <span class="payment-option-item">
+                <img
+                  src="assets/payment/mastercard.svg"
+                  alt="Mastercard"
+                  width="96"
+                  height="32"
+                />
+              </span>
+              <span class="payment-option-item cash">
+                <img
+                  src="assets/payment/cash.svg"
+                  alt="Cash payment"
+                  width="32"
+                  height="32"
+                />
+              </span>
+            </div>
+
+            <p class="payment-footer-note">Card or cash payment available</p>
+          </div>
+
+          <!-- Footer Contact -->
+          <div class="footer-section footer-contact-section">
+            <h3>Contact</h3>
+
+            <div class="footer-contact-items">
+              <p>
+                <i class="fa-solid fa-phone"></i>
+                <a href="tel:+33767737309"> +33 7 67 73 73 09 </a>
+              </p>
+
+              <p>
+                <i class="fa-solid fa-envelope"></i>
+
+                <a href="mailto:parisprivateairporttransfer@gmail.com">
+                  parisprivateairporttransfer@gmail.com
+                </a>
+              </p>
+
+              <p>
+                <i class="fa-brands fa-whatsapp"></i>
+                <a
+                  href="https://wa.me/message/PLPEMCJHSZ6CD1"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  WhatsApp
+                </a>
+              </p>
+
+              <p>
+                <i class="fa-brands fa-instagram"></i>
+                <a
+                  href="https://www.instagram.com/parisprivateairporttransfer?igsh=MXA4bnpkbXlnNDVpaA%3D%3D&utm_source=qr"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Instagram
+                </a>
+              </p>
+
+              <p>
+                <i class="fa-brands fa-facebook-f"></i>
+                <a
+                  href="https://www.facebook.com/share/1BnehF98e9/?mibextid=wwXIfr"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Facebook
+                </a>
+              </p>
+
+              <p>
+                <i class="fa-brands fa-tiktok"></i>
+                <a
+                  href="http://www.tiktok.com/@parisprivatetransfer"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  TikTok
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <p>
+            &copy; 2026 Paris Private Airport Transfer. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/main.js?v=20260910-1" defer></script>
+    <!-- <script src="js/forms.js"></script> -->
+    <script src="js/email-operation.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="js/supabase.js" defer></script>
+    <script src="js/reservation.js" defer></script>
+    <script src="js/marketing-attribution.js"></script>
+  </body>
+</html>

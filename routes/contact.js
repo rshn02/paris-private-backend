@@ -1,6 +1,7 @@
 import { sendEmail } from "../utils/sendEmail.js";
 import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
 import { validateEmailInput } from "../middleware/emailValidation.js";
+import { validatePhoneInput } from "../middleware/phoneValidation.js";
 import express from "express";
 import { FROM_EMAIL, REPLY_TO } from "../config/resend.js";
 import {
@@ -25,12 +26,6 @@ function isValidContactEmail(value) {
         && parts[1].split(".").every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label));
 }
 
-function isValidContactPhone(value) {
-    if (typeof value !== "string" || !/^\+?[0-9 ()-]+$/.test(value)) return false;
-    const digits = value.replace(/\D/g, "");
-    return digits.length >= 7 && digits.length <= 15;
-}
-
 function subjectLabel(value) {
   const labels = {
     booking: "Booking",
@@ -45,7 +40,7 @@ function subjectLabel(value) {
 
 router.post("/", ...emailRateLimits(),
   (req, res, next) => req.body?.website ? res.json({ success: true }) : next(),
-  validateEmailInput("email"), preventDuplicateEmails(), async (req, res) => {
+  validateEmailInput("email"), validatePhoneInput("phone"), preventDuplicateEmails(), async (req, res) => {
   try {
     const body = req.body;
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -66,7 +61,6 @@ router.post("/", ...emailRateLimits(),
     const message = cleanText(body.message);
     const validationError = !name ? "Your full name is required."
       : !isValidContactEmail(email) ? "A valid email address is required."
-      : !isValidContactPhone(phone) ? "A valid phone number is required."
       : !subject ? "A subject is required."
       : !message ? "A message is required."
       : "";
