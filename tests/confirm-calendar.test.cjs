@@ -40,7 +40,9 @@ async function confirm(options = {}) {
     };
     return query;
   } };
+  const capacity = await import("../utils/bookingCapacity.js");
   const context = vm.createContext({
+    ...capacity,
     express: { Router: () => ({ post(...args) { handler = args.at(-1); } }) },
     supabase, emailRateLimits: () => [], preventDuplicateEmails: () => () => {},
     syncBookingCalendarEvents: async value => {

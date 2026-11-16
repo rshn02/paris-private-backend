@@ -1,3 +1,4 @@
+import { bookingCapacityIssue, validateBookingCapacity, displayBookingVehicle, CHILD_SEAT_POLICY } from "../utils/bookingCapacity.js";
 import { normalizeTime } from "../utils/normalizeTime.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
@@ -159,7 +160,8 @@ function buildEmailData(booking) {
     return_date: booking.return_date || "",
     return_time: booking.return_time || "",
 
-    vehicle: booking.vehicle_type || "",
+    vehicle: displayBookingVehicle(booking),
+    child_seat_policy: CHILD_SEAT_POLICY,
 
     passengers: String(booking.passengers || 0),
     children: String(booking.children || 0),
@@ -293,15 +295,20 @@ router.post("/modify", ...emailRateLimits(), validateEmailInput("customer_email"
       pickup_location: pickup_location ?? booking.pickup_location,
       destination: destination ?? booking.destination,
       vehicle_type: vehicle_type ?? booking.vehicle_type,
-      passengers: required(passengers) ? Number(passengers) : booking.passengers,
-      children: required(children) ? Number(children) : booking.children,
-      luggage: required(luggage) ? Number(luggage) : booking.luggage,
+      passengers: passengers === undefined ? booking.passengers : passengers,
+      children: children === undefined ? booking.children : children,
+      luggage: luggage === undefined ? booking.luggage : luggage,
       baby_seats: required(baby_seats) ? Number(baby_seats) : booking.baby_seats,
       child_seats: required(child_seats) ? Number(child_seats) : booking.child_seats,
       flight_number: flight_number ?? booking.flight_number,
       terminal: terminal ?? booking.terminal,
       notes: notes ?? booking.notes
     };
+
+    const capacityIssue = bookingCapacityIssue({ ...req.body,
+      passengers: mergedBooking.passengers, children: mergedBooking.children,
+      vehicle_type: mergedBooking.vehicle_type, luggage: mergedBooking.luggage });
+    if (capacityIssue) return res.status(400).json({ success: false, ...capacityIssue });
 
     const editableFields = ["service_type", "trip_type", "booking_date", "booking_time",
       "return_date", "return_time", "pickup_location", "destination", "vehicle_type",

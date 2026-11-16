@@ -23,6 +23,7 @@ function backend(){
  };}};
  const bindings={express,console:{log(){},error(){}},process:{env},supabase,phone,...crypto,rateLimit};
  for(const [file,names]of[
+  ['utils/bookingCapacity.js',['bookingCapacityIssue','validateBookingCapacity','displayBookingVehicle','CHILD_SEAT_POLICY']],
   ['middleware/phoneValidation.js',['validatePhoneInput']],['middleware/emailValidation.js',['validateEmailInput']],
   ['middleware/emailProtection.js',['emailRateLimits','preventDuplicateEmails']],['middleware/validation.js',['validateBookingData']],
   ['middleware/requireAdmin.js',['requireAdmin']],['utils/pricing.js',['calculateBookingPrice','calculatePublicBookingPrice','calculateAdminFinalPrice','isSupportedService']]

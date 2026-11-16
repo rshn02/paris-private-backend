@@ -34,10 +34,10 @@ export function isNightTime(time) {
   return hour >= 22 || hour < 6;
 }
 
-// Match the existing form: 1–8 adults, 0–8 children, the 5+ bags
-// option encoded as 5, and seat counters capped at 10.
+// Validate counts only: luggage is an exact 0–8 large-suitcase count.
+// Historical 5+ bag records remain stored as 5; no fare calculation changes.
 export function normalizeBookingNumbers(data) {
-  const limits = { passengers: [1, 8, 1], children: [0, 8, 0], luggage: [0, 5, 0],
+  const limits = { passengers: [1, 8, 1], children: [0, 8, 0], luggage: [0, 8, 0],
     baby_seats: [0, 10, 0], child_seats: [0, 10, 0] };
   const normalized = {};
   for (const [field, [min, max, fallback]] of Object.entries(limits)) {

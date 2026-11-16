@@ -1,3 +1,4 @@
+import { bookingCapacityIssue, validateBookingCapacity, displayBookingVehicle, CHILD_SEAT_POLICY } from "../utils/bookingCapacity.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
 import { validateEmailInput } from "../middleware/emailValidation.js";
@@ -271,7 +272,8 @@ const emailData = {
 
   service_type: serviceType,
   trip_type: booking.trip_type === "round_trip" ? "Round Trip" : "One Way",
-  vehicle: booking.vehicle_type || "",
+  vehicle: displayBookingVehicle(booking),
+    child_seat_policy: CHILD_SEAT_POLICY,
   payment_method: paymentMethod,
 
   passengers: String(booking.passengers || 0),
@@ -350,7 +352,7 @@ await sendEmail("booking-admin", {
   }
 }
 
-router.post("/admin", requireAdmin, validateEmailInput("customer_email"), validatePhoneInput("customer_phone"), preventDuplicateEmails(), applyServerPricing(true), createBooking);
-router.post("/", ...emailRateLimits(), validateEmailInput("customer_email"), validatePhoneInput("customer_phone"), preventDuplicateEmails(), applyServerPricing(false), createBooking);
+router.post("/admin", requireAdmin, validateEmailInput("customer_email"), validatePhoneInput("customer_phone"), validateBookingCapacity, preventDuplicateEmails(), applyServerPricing(true), createBooking);
+router.post("/", ...emailRateLimits(), validateEmailInput("customer_email"), validatePhoneInput("customer_phone"), validateBookingCapacity, preventDuplicateEmails(), applyServerPricing(false), createBooking);
 
 export default router;

@@ -1,3 +1,4 @@
+import { bookingCapacityIssue, validateBookingCapacity, displayBookingVehicle, CHILD_SEAT_POLICY } from "../utils/bookingCapacity.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
 import express from "express";
@@ -30,6 +31,9 @@ router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res
         message: "Invalid or expired confirmation link."
       });
     }
+
+    const capacityIssue = bookingCapacityIssue(booking);
+    if (capacityIssue) return res.status(400).json({ success: false, ...capacityIssue });
 
     if (booking.status === "confirmed") {
       return res.json({
@@ -164,7 +168,8 @@ router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res
 
       service_type: serviceType,
       trip_type: updatedBooking.trip_type === "round_trip" ? "Round Trip" : "One Way",
-      vehicle: updatedBooking.vehicle_type || "",
+      vehicle: displayBookingVehicle(updatedBooking),
+      child_seat_policy: CHILD_SEAT_POLICY,
       payment_method: paymentMethod,
 
       passengers: String(updatedBooking.passengers || 0),
