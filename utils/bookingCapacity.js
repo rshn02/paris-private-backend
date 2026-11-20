@@ -38,8 +38,8 @@ export function bookingCapacityIssue(data) {
   if (adults + children > 2 && String(data.vehicle_type || "").trim() === "Premium Sedan") {
     return { code: "SEDAN_CAPACITY_EXCEEDED", message: "The sedan accommodates up to 2 passengers. Please select a van and check luggage and child-seat suitability." };
   }
-  if (luggage > 2 && String(data.vehicle_type || "").trim() === "Premium Sedan") {
-    return { code: "SEDAN_LUGGAGE_CAPACITY_EXCEEDED", message: "The sedan accommodates up to 2 large suitcases. Please select a van and check passenger, child-seat and luggage suitability." };
+  if (luggage > 3 && String(data.vehicle_type || "").trim() === "Premium Sedan") {
+    return { code: "SEDAN_LUGGAGE_CAPACITY_EXCEEDED", message: "The sedan accommodates up to 3 large suitcases. Please select a van and check passenger, child-seat and luggage suitability." };
   }
   return null;
 }

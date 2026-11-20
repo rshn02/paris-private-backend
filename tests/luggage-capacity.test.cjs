@@ -94,9 +94,9 @@ for(const route of ['public','admin','modify','confirm'])for(const bad of [9,10,
  const f=fixture(route==='public'||route==='admin'?'booking':route==='confirm'?'confirm':'manage',{booking:{passengers:2,children:0,luggage:route==='confirm'?bad:0,vehicle_type:van}});
  await serve(t,f,async post=>{const r=await post(route==='confirm'?{token:'synthetic-token'}:{...validBooking,booking_number:'TEST-1',passengers:2,children:0,luggage:bad,vehicle_type:van},route==='admin'?'/admin':route==='modify'?'/modify':'/');assert.equal(r.status,400);if([9,10,'9','more-than-8'].includes(bad)){assert.equal(r.body.code,'LUGGAGE_CONTACT_REQUIRED');assert.match(r.body.message,/suitable vehicle solution/);assert.equal(new URL(r.body.contact_url).pathname,'/contact');}noEffects(f);});
 });
-for(const route of ['public','admin','modify','confirm'])for(const bags of [2,3])test(route+' sedan luggage limit '+bags,async t=>{
+for(const route of ['public','admin','modify','confirm'])for(const bags of [2,3,4])test(route+' sedan luggage limit '+bags,async t=>{
  const f=fixture(route==='public'||route==='admin'?'booking':route==='confirm'?'confirm':'manage',{booking:{passengers:2,children:0,luggage:bags,vehicle_type:'Premium Sedan'}});
- await serve(t,f,async post=>{const r=await post(route==='confirm'?{token:'synthetic-token'}:{...validBooking,booking_number:'TEST-1',passengers:2,children:0,luggage:bags,vehicle_type:'Premium Sedan',notes:'New note'},route==='admin'?'/admin':route==='modify'?'/modify':'/');assert.equal(r.status,bags===2?200:400);if(bags===3){assert.equal(r.body.code,'SEDAN_LUGGAGE_CAPACITY_EXCEEDED');noEffects(f);}});
+ await serve(t,f,async post=>{const r=await post(route==='confirm'?{token:'synthetic-token'}:{...validBooking,booking_number:'TEST-1',passengers:2,children:0,luggage:bags,vehicle_type:'Premium Sedan',notes:'New note'},route==='admin'?'/admin':route==='modify'?'/modify':'/');assert.equal(r.status,bags<=3?200:400);if(bags===4){assert.equal(r.body.code,'SEDAN_LUGGAGE_CAPACITY_EXCEEDED');noEffects(f);}});
 });
 for(const [passengers,children,bags,code]of [[8,0,8,null],[6,2,8,null],[8,1,8,'GROUP_CONTACT_REQUIRED'],[8,0,9,'LUGGAGE_CONTACT_REQUIRED'],[8,1,9,'GROUP_CONTACT_REQUIRED']])test('combined people/large suitcases '+[passengers,children,bags],async t=>{
  const f=fixture('booking');await serve(t,f,async post=>{const r=await post({...validBooking,passengers,children,luggage:bags,vehicle_type:van,baby_seats:1,child_seats:1});assert.equal(r.status,code?400:200);if(code){assert.equal(r.body.code,code);noEffects(f);}else{assert.equal(f.booking.luggage,bags);assert.equal(f.booking.price,130);}});
@@ -124,7 +124,7 @@ test('excess suitcases direct a manually unsuitable sedan request to contact bef
 for (const [people,bags,fee] of [[1,2,0],[1,3,0],[1,4,5],[1,8,5],[2,2,0],[2,3,0],[2,4,5],[2,5,5],[2,8,5],[3,4,0]]) {
  test(`luggage pricing create ${people} people / ${bags} suitcases`,async t=>{
   const f=fixture('booking');await serve(t,f,async post=>{
-   const r=await post({...validBooking,passengers:people,children:0,luggage:bags,vehicle_type:bags<=2&&people<=2?'Premium Sedan':van,luggage_vehicle_surcharge:999,price:1});
+   const r=await post({...validBooking,passengers:people,children:0,luggage:bags,vehicle_type:bags<=3&&people<=2?'Premium Sedan':van,luggage_vehicle_surcharge:999,price:1});
    assert.equal(r.status,200);assert.equal(f.booking.original_price,people<=2?80:90);
    assert.equal(f.booking.luggage_vehicle_surcharge,fee);assert.equal(f.booking.price,(people<=2?80:90)+fee);
    assert.equal(f.calendarCalls[0].price,f.booking.price);
