@@ -55,7 +55,7 @@ function fixture(route, options={}) {
     return query;
   }};
   const originalValidation=load('middleware/validation.js',{},['validateBookingData']);
-  const bindings={...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
+  const bindings={...load('utils/pricing.js',{},['formatBookingBasePrice','storedBookingPricing']),...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
     FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'company@gmail.com',
     process:{env:{ADMIN_EMAIL:'admin@example.com',CLIENT_URL:'https://example.com',RESEND_TEMPLATE_CONTACT:'contact-template',RESEND_TEMPLATE_PENDING:'pending-template',RESEND_TEMPLATE_CONFIRMED:'confirmed-template',RESEND_TEMPLATE_MODIFIED:'modified-template',RESEND_TEMPLATE_CANCELLED:'cancelled-template'}},
     sanitizeMarketingAttribution:()=>null,cleanMarketingService:()=>'',formatInternalMarketingAttribution:()=>'',

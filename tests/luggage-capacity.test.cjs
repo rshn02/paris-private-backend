@@ -26,7 +26,7 @@ const protection = load('middleware/emailProtection.js', {...crypto, rateLimit},
 const { normalizeTime } = load("utils/normalizeTime.js", {}, ["normalizeTime"]);
 const quiet = {log(){},error(){}};
 const unusedContact = {name:'John Doe',email:'john@example.com',phone:'+44 7400 123456',subject:'quote',message:'Please send a quote.',website:''};
-const validBooking = {customer_phone:'+12025550123',customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
+const validBooking = {pricing_version:"van-luggage-v1",customer_phone:'+12025550123',customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
 function fixture(route, options={}) {
   const calls=[], logs=[], calendarCalls=[];
   let updates=0, inserts=0;
@@ -55,7 +55,7 @@ function fixture(route, options={}) {
     return query;
   }};
   const originalValidation=load('middleware/validation.js',{},['validateBookingData']);
-  const bindings={...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
+  const bindings={...load('utils/pricing.js',{},['formatBookingBasePrice','storedBookingPricing']),...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
     FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'company@gmail.com',
     process:{env:{ADMIN_EMAIL:'admin@example.com',CLIENT_URL:'https://example.com',RESEND_TEMPLATE_CONTACT:'contact-template',RESEND_TEMPLATE_PENDING:'pending-template',RESEND_TEMPLATE_CONFIRMED:'confirmed-template',RESEND_TEMPLATE_MODIFIED:'modified-template',RESEND_TEMPLATE_CANCELLED:'cancelled-template'}},
     sanitizeMarketingAttribution:()=>null,cleanMarketingService:()=>'',formatInternalMarketingAttribution:()=>'',
@@ -81,11 +81,11 @@ async function serve(t,fixture,fn){
 
 const van='Luxury Van 7 seats';
 function noEffects(f){assert.equal(f.inserts,0);assert.equal(f.updates,0);assert.equal(f.calls.length,0);assert.equal(f.calendarCalls.length,0);}
-for(const route of ['public','admin','modify','confirm'])for(let bags=0;bags<=8;bags++)test(route+' exact suitcase count '+bags+' is retained with unchanged fares',async t=>{
+for(const route of ['public','admin','modify','confirm'])for(let bags=0;bags<=8;bags++)test(route+' exact suitcase count '+bags+' is retained with unchanged base fares',async t=>{
  const f=fixture(route==='public'||route==='admin'?'booking':route==='confirm'?'confirm':'manage',{booking:{passengers:2,children:0,luggage:route==='confirm'?bags:1,vehicle_type:van}});
  await serve(t,f,async post=>{
   const body=route==='confirm'?{token:'synthetic-token'}:{...validBooking,booking_number:'TEST-1',passengers:2,children:0,luggage:bags,vehicle_type:van,notes:'Two hand luggage items; please confirm space.'};
-  const url=route==='admin'?'/admin':route==='modify'?'/modify':'/';const r=await post(body,url);assert.equal(r.status,200);assert.equal(f.booking.luggage,bags);assert.equal(f.booking.price,80);
+  const url=route==='admin'?'/admin':route==='modify'?'/modify':'/';const r=await post(body,url);assert.equal(r.status,200);assert.equal(f.booking.luggage,bags);assert.equal(f.booking.price,route!=='confirm'&&bags>=4?85:80);
   for(const {payload}of f.calls){assert.equal(payload.template.variables.luggage,String(bags));assert.ok(!Object.hasOwn(payload.template.variables,'suitcases'));assert.ok(!Object.hasOwn(payload.template.variables,'hand_luggage'));}
   if(route!=='confirm')assert.equal(f.booking.notes,body.notes);
  });
@@ -112,10 +112,72 @@ test('fare tables, caps and surcharges remain identical to the pre-luggage basel
  assert.deepEqual(JSON.parse(JSON.stringify({PRICING:values.PRICING,SERVICE_MAX:values.SERVICE_MAX,NIGHT_SURCHARGE:values.NIGHT_SURCHARGE})),require('./fixtures/phase2d-pricing-baseline.json'));
  for(const service_type of Object.keys(values.PRICING))for(const passengers of [1,6,8])for(let luggage=0;luggage<=8;luggage++){
   const data={service_type,passengers,children:0,luggage,baby_seats:1,child_seats:1,trip_type:'round_trip',booking_time:'23:00',return_time:'05:00'};
-  const current=values.calculateBookingPrice(data);const base=values.PRICING[service_type].default??values.PRICING[service_type][passengers];assert.equal(current.total,base*2+20);
+  const current=values.calculateBookingPrice(data);const base=values.PRICING[service_type].default??values.PRICING[service_type][passengers];assert.equal(current.base,base);assert.equal(current.night,20);assert.equal(current.total,base*2+20+(passengers<=2&&luggage>=4?5:0));
  }
 });
 
 test('excess suitcases direct a manually unsuitable sedan request to contact before ordinary vehicle correction',async t=>{
  const f=fixture('booking');await serve(t,f,async post=>{const r=await post({...validBooking,passengers:3,children:0,luggage:9,vehicle_type:'Premium Sedan'});assert.equal(r.status,400);assert.equal(r.body.code,'LUGGAGE_CONTACT_REQUIRED');assert.match(r.body.message,/suitable vehicle solution/);noEffects(f);});
+});
+
+// Pricing regression: exercise real Express routes with only synthetic provider adapters.
+for (const [people,bags,fee] of [[1,2,0],[1,3,0],[1,4,5],[1,8,5],[2,2,0],[2,3,0],[2,4,5],[2,5,5],[2,8,5],[3,4,0]]) {
+ test(`luggage pricing create ${people} people / ${bags} suitcases`,async t=>{
+  const f=fixture('booking');await serve(t,f,async post=>{
+   const r=await post({...validBooking,passengers:people,children:0,luggage:bags,vehicle_type:bags<=2&&people<=2?'Premium Sedan':van,luggage_vehicle_surcharge:999,price:1});
+   assert.equal(r.status,200);assert.equal(f.booking.original_price,people<=2?80:90);
+   assert.equal(f.booking.luggage_vehicle_surcharge,fee);assert.equal(f.booking.price,(people<=2?80:90)+fee);
+   assert.equal(f.calendarCalls[0].price,f.booking.price);
+   for(const {payload} of f.calls){assert.equal(payload.template.variables.price_total,f.booking.price+'€');assert.equal(/5€ extra luggage/.test(payload.template.variables.price_base),fee===5);}
+  });
+ });
+}
+for(const route of ['public','admin','modify'])test(route+' stale pricing version blocks eligible changes without effects',async t=>{
+ const f=fixture(route==='modify'?'manage':'booking',{booking:{passengers:2,children:0,luggage:3,vehicle_type:van}});
+ await serve(t,f,async post=>{const body={...validBooking,pricing_version:undefined,booking_number:'TEST-1',passengers:2,children:0,luggage:4,vehicle_type:van};const r=await post(body,route==='admin'?'/admin':route==='modify'?'/modify':'/');assert.equal(r.status,409);assert.equal(r.body.code,'PRICE_REFRESH_REQUIRED');noEffects(f);});
+});
+for(const [fromP,fromB,toP,toB,expected] of [[2,4,2,3,80],[2,3,2,4,85],[2,4,3,4,90],[3,4,2,4,85]])test(`modify fee transition ${fromP}/${fromB} to ${toP}/${toB}`,async t=>{
+ const f=fixture('manage',{booking:{passengers:fromP,children:0,luggage:fromB,vehicle_type:van,price:fromP>2?90:fromB>=4?85:80,luggage_vehicle_surcharge:fromP<=2&&fromB>=4?5:0}});
+ await serve(t,f,async post=>{const r=await post({...validBooking,booking_number:'TEST-1',passengers:toP,children:0,luggage:toB,vehicle_type:van},'/modify');assert.equal(r.status,200);assert.equal(f.booking.price,expected);assert.equal(f.booking.luggage_vehicle_surcharge,expected===85?5:0);assert.equal(f.calendarCalls[0].price,expected);for(const {payload} of f.calls)assert.equal(payload.template.variables.price_total,expected+'€');});
+});
+test('admin custom total remains all-inclusive with eligible luggage',async t=>{
+ const f=fixture('booking');await serve(t,f,async post=>{const r=await post({...validBooking,passengers:2,children:0,luggage:4,vehicle_type:van,admin_override:{custom_price:150}},'/admin');assert.equal(r.status,200);assert.equal(f.booking.price,150);assert.equal(f.booking.luggage_vehicle_surcharge,null);for(const {payload}of f.calls)assert.doesNotMatch(payload.template.variables.price_base,/5€ extra luggage/);});
+});
+for(const service of ['cdg-paris','other'])test('public modification preserves agreed administrator total: '+service,async t=>{
+ const f=fixture('manage',{booking:{service_type:service,passengers:2,children:0,luggage:3,vehicle_type:van,price:150,original_price:service==='other'?150:80,price_override:true,luggage_vehicle_surcharge:null}});
+ await serve(t,f,async post=>{const r=await post({booking_number:'TEST-1',customer_email:validBooking.customer_email,luggage:4,pricing_version:'van-luggage-v1'},'/modify');assert.equal(r.status,200);assert.equal(f.booking.price,150);assert.equal(f.booking.luggage_vehicle_surcharge,null);assert.equal(r.body.booking.has_agreed_total,true);assert.equal(r.body.booking.price_override,undefined);});
+});
+for(const recordedFee of [null,5])test('confirmation uses recorded total; repeated confirmation never adds a fee: '+recordedFee,async t=>{
+ const total=recordedFee?85:80;const f=fixture('confirm',{booking:{passengers:2,children:0,luggage:4,vehicle_type:van,price:total,luggage_vehicle_surcharge:recordedFee}});
+ await serve(t,f,async post=>{for(let i=0;i<2;i++){const r=await post({token:'synthetic-token'});assert.equal(r.status,200);assert.equal(r.body.pricing.total,total);assert.equal(r.body.pricing.vehicleSurcharge,recordedFee||0);assert.equal(f.booking.price,total);}for(const {payload}of f.calls){assert.equal(payload.template.variables.price_total,total+'€');assert.equal(/5€ extra luggage/.test(payload.template.variables.price_base),recordedFee===5);}});
+});
+test('legacy notes-only modification does not add a retrospective luggage fee',async t=>{
+ const f=fixture('manage',{booking:{passengers:2,children:0,luggage:4,vehicle_type:van,price:80,luggage_vehicle_surcharge:null}});
+ await serve(t,f,async post=>{const r=await post({booking_number:'TEST-1',customer_email:validBooking.customer_email,notes:'Changed flight information'},'/modify');assert.equal(r.status,200);assert.equal(f.booking.price,80);assert.equal(f.booking.luggage_vehicle_surcharge,null);});
+});
+test('round trip, both night legs and luggage fee are charged once with discounts unchanged',()=>{
+ const p=load('utils/pricing.js',{},['calculateBookingPrice','calculateAdminFinalPrice']);
+ const result=p.calculateBookingPrice({...validBooking,passengers:1,children:1,luggage:4,trip_type:'round_trip',booking_time:'23:00',return_time:'05:00'});
+ assert.equal(result.base,80);assert.equal(result.night,20);assert.equal(result.vehicleSurcharge,5);assert.equal(result.total,185);
+ assert.equal(p.calculateAdminFinalPrice(result,{discount:{type:'fixed',amount:10}}).finalPrice,175);
+ assert.equal(p.calculateAdminFinalPrice(result,{custom_price:150}).finalPrice,150);
+ const calendar=load('utils/calendar.js',{google:{auth:{GoogleAuth:class {}}},process:{env:{}}},['buildDescription']);
+ const description=calendar.buildDescription({...validBooking,price:185,luggage_vehicle_surcharge:5});assert.match(description,/5.*once per booking.*included/i);
+ assert.doesNotMatch(calendar.buildDescription({...validBooking,price:80,luggage_vehicle_surcharge:null}),/extra luggage vehicle surcharge/i);
+});
+
+test('repeated eligible booking operation cannot charge or send twice',async t=>{
+ const f=fixture('booking');await serve(t,f,async post=>{const body={...validBooking,passengers:2,children:0,luggage:4,vehicle_type:van};for(let i=0;i<2;i++)assert.equal((await post(body)).status,200);assert.equal(f.inserts,1);assert.equal(f.booking.price,85);assert.equal(f.calls.length,2);assert.equal(f.calendarCalls.length,1);});
+});
+test('modification persists both night-leg amounts and one booking fee',async t=>{
+ const f=fixture('manage',{booking:{passengers:2,children:0,luggage:3,vehicle_type:van}});await serve(t,f,async post=>{const r=await post({...validBooking,booking_number:'TEST-1',passengers:2,children:0,luggage:4,vehicle_type:van,trip_type:'round_trip',booking_time:'23:00',return_time:'05:00',return_date:'2026-12-02'},'/modify');assert.equal(r.status,200);assert.equal(f.booking.price,185);assert.equal(f.booking.outbound_night_surcharge,10);assert.equal(f.booking.return_night_surcharge,10);assert.equal(f.booking.night_surcharge,20);assert.equal(f.booking.luggage_vehicle_surcharge,5);for(const {payload}of f.calls){assert.equal(payload.template.variables.price_total,'185€');assert.match(payload.template.variables.price_base,/160€ \+ 5€/);}});
+});
+
+for(const service_type of ['unknown','','other'])test('modification rejects unsupported/new custom service before pricing: '+service_type,async t=>{
+ const f=fixture('manage',{booking:{passengers:2,children:0,luggage:3,vehicle_type:van}});await serve(t,f,async post=>{const r=await post({...validBooking,booking_number:'TEST-1',passengers:2,children:0,luggage:4,vehicle_type:van,service_type},'/modify');assert.equal(r.status,400);assert.match(r.body.message,/Unsupported service/);noEffects(f);});
+});
+
+test('discount-only metadata keeps existing standard repricing and removes luggage fee for three people',async t=>{
+ const f=fixture('manage',{booking:{passengers:2,children:0,luggage:4,vehicle_type:van,price:75,original_price:80,calculated_price:85,discount_amount:10,price_override:true,luggage_vehicle_surcharge:5}});
+ await serve(t,f,async post=>{const r=await post({...validBooking,booking_number:'TEST-1',passengers:3,children:0,luggage:4,vehicle_type:van},'/modify');assert.equal(r.status,200);assert.equal(f.booking.price,90);assert.equal(f.booking.luggage_vehicle_surcharge,0);assert.equal(r.body.booking.has_agreed_total,false);});
 });

@@ -35,7 +35,7 @@ export function isNightTime(time) {
 }
 
 // Validate counts only: luggage is an exact 0–8 large-suitcase count.
-// Historical 5+ bag records remain stored as 5; no fare calculation changes.
+// Historical records are never repriced during confirmation or schema migration.
 export function normalizeBookingNumbers(data) {
   const limits = { passengers: [1, 8, 1], children: [0, 8, 0], luggage: [0, 8, 0],
     baby_seats: [0, 10, 0], child_seats: [0, 10, 0] };
@@ -62,7 +62,7 @@ export function calculateBookingPrice(data, { allowCustomService = false } = {})
     }
     // The administrator's amount covers the entire trip, including any return
     // and night travel. There is no automatic fare for this service.
-    return { base: price, outboundNight: 0, returnNight: 0, night: 0, total: price };
+    return { base: price, outboundNight: 0, returnNight: 0, night: 0, vehicleSurcharge: 0, total: price };
   }
   const grid = isSupportedService(serviceType) ? PRICING[serviceType] : null;
 
@@ -79,9 +79,10 @@ export function calculateBookingPrice(data, { allowCustomService = false } = {})
   const outboundNight = isNightTime(data.booking_time) ? NIGHT_SURCHARGE : 0;
   const returnNight = isRoundTrip && isNightTime(data.return_time) ? NIGHT_SURCHARGE : 0;
   const night = outboundNight + returnNight;
-  const total = (isRoundTrip ? base * 2 : base) + night;
+  const vehicleSurcharge = people >= 1 && people <= 2 && counts.luggage >= 4 && counts.luggage <= 8 ? 5 : 0;
+  const total = (isRoundTrip ? base * 2 : base) + night + vehicleSurcharge;
 
-  return { base, outboundNight, returnNight, night, total };
+  return { base, outboundNight, returnNight, night, vehicleSurcharge, total };
 }
 
 export function calculateAdminFinalPrice(calculatedPrice, override = {}) {
@@ -128,4 +129,19 @@ export function calculateAdminFinalPrice(calculatedPrice, override = {}) {
 // fields included by a public client are ignored.
 export function calculatePublicBookingPrice(data) {
   return calculateAdminFinalPrice(calculateBookingPrice(data));
+}
+
+// Read the recorded charge, never infer it from legacy luggage or recalculate an agreed fare.
+export function storedBookingPricing(booking) {
+  return { base: Number(booking.original_price || 0),
+    vehicleSurcharge: Number(booking.luggage_vehicle_surcharge) === 5 ? 5 : 0,
+    total: Number(booking.price || 0) };
+}
+
+// Existing published templates already render this String variable. No new template variable.
+export function formatBookingBasePrice(booking) {
+  const { base, vehicleSurcharge } = storedBookingPricing(booking);
+  if (!vehicleSurcharge) return `${base}€`;
+  const transferBase = booking.trip_type === "round_trip" ? base * 2 : base;
+  return `${transferBase}€ + 5€ extra luggage vehicle surcharge (once per booking)`;
 }

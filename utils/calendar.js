@@ -107,6 +107,8 @@ function buildDescription(booking, leg = "outbound") {
     `Vehicle: ${booking.vehicle_type || ""}`,
     `Payment method: ${booking.payment_method || ""}`,
     `Price: ${booking.price || ""}€`,
+    ...(Number(booking.luggage_vehicle_surcharge) === 5
+      ? ["Extra luggage vehicle surcharge: 5€ (once per booking, included in total)"] : []),
     `Notes: ${booking.notes || ""}`,
   ].join("\n");
 }

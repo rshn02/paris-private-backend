@@ -31,7 +31,7 @@ function fixture(options={}){
  };}};
  const console={log:(...x)=>logs.push(x),error:(...x)=>logs.push(x)};
  const {requireAdmin}=load('middleware/requireAdmin.js',{supabase,process:{env},console},['requireAdmin']);
- const bindings={...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,supabase,process:{env},console,requireAdmin,...pricing,...validation,...emailValidation,...protection,
+ const bindings={...load('utils/pricing.js',{},['formatBookingBasePrice','storedBookingPricing']),...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,supabase,process:{env},console,requireAdmin,...pricing,...validation,...emailValidation,...protection,
   sendEmail:async(...args)=>{emails.push(args);return{id:'mock-email-id'};},FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'admin@example.com',
   generateReference:async()=>'TEST-ADMIN',generateToken:()=>'mock-confirm-token',sanitizeMarketingAttribution:()=>null,
   syncBookingCalendarEvents:async()=>{calendar++;return{outboundEventId:'mock-event',returnEventId:null};}};

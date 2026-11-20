@@ -11,7 +11,7 @@ import { generateToken } from "../utils/generateToken.js";
 import { syncBookingCalendarEvents } from "../utils/calendar.js";
 import { validateBookingData } from "../middleware/validation.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
-import { calculateAdminFinalPrice, calculatePublicBookingPrice, calculateBookingPrice, isSupportedService } from "../utils/pricing.js";
+import { calculateAdminFinalPrice, calculatePublicBookingPrice, calculateBookingPrice, isSupportedService, formatBookingBasePrice } from "../utils/pricing.js";
 import { sanitizeMarketingAttribution } from "../utils/marketingAttribution.js";
 
 const router = express.Router();
@@ -42,6 +42,13 @@ function applyServerPricing(allowAdminOverrides) {
       const pricing = allowAdminOverrides
         ? calculateAdminFinalPrice(calculated, data.admin_override || {})
         : calculatePublicBookingPrice(data);
+
+      const vehicleSurcharge = pricing.customPrice != null ? 0 : Number(calculated.vehicleSurcharge || 0);
+      if (vehicleSurcharge && data.pricing_version !== "van-luggage-v1") {
+        return res.status(409).json({ success: false, code: "PRICE_REFRESH_REQUIRED",
+          message: "Please refresh the booking form to review the extra luggage vehicle surcharge before booking." });
+      }
+      data.luggage_vehicle_surcharge = pricing.customPrice != null ? null : vehicleSurcharge;
 
       // The browser can display an estimate, but only this middleware sets persisted prices.
       data.outbound_night_surcharge = calculated.outboundNight;
@@ -125,6 +132,7 @@ async function createBooking(req, res) {
       notes: data.notes || null,
       price: Number(data.price),
       original_price: Number(data.original_price),
+      luggage_vehicle_surcharge: data.luggage_vehicle_surcharge == null ? null : Number(data.luggage_vehicle_surcharge),
       promo_code: data.promo_code || null,
       payment_method: data.payment_method || null,
       payment_status: "unpaid",
@@ -286,7 +294,7 @@ const emailData = {
   terminal: booking.terminal || "",
   notes: booking.notes || "",
 
-  price_base: booking.original_price ? `${booking.original_price}€` : "0€",
+  price_base: formatBookingBasePrice(booking),
   price_outbound_night: `${outboundNight}€`,
   price_return_night: `${returnNight}€`,
   price_night: `${totalNight}€`,

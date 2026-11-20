@@ -42,6 +42,7 @@ async function confirm(options = {}) {
   } };
   const capacity = await import("../utils/bookingCapacity.js");
   const context = vm.createContext({
+    ...await import("../utils/pricing.js"),
     ...capacity,
     express: { Router: () => ({ post(...args) { handler = args.at(-1); } }) },
     supabase, emailRateLimits: () => [], preventDuplicateEmails: () => () => {},

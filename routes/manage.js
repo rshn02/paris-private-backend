@@ -1,3 +1,4 @@
+import { formatBookingBasePrice, isSupportedService } from "../utils/pricing.js";
 import { bookingCapacityIssue, validateBookingCapacity, displayBookingVehicle, CHILD_SEAT_POLICY } from "../utils/bookingCapacity.js";
 import { normalizeTime } from "../utils/normalizeTime.js";
 import { sendEmail } from "../utils/sendEmail.js";
@@ -39,6 +40,13 @@ function required(value) {
   return value !== undefined && value !== null && String(value).trim() !== "";
 }
 
+// NULL marks a historical/unrecorded fee or an all-inclusive custom total.
+// Standard quotes (including discounts) always record 0 or 5, and keep normal repricing.
+function hasAgreedTotal(booking) {
+  return booking.service_type === "other" ||
+    (booking.price_override === true && booking.luggage_vehicle_surcharge == null);
+}
+
 // Internal admin metadata must never be returned by the customer-facing flow.
 function customerBookingView(booking) {
   const {
@@ -51,7 +59,7 @@ function customerBookingView(booking) {
     admin_user_id,
     ...customerBooking
   } = booking;
-  return customerBooking;
+  return { ...customerBooking, has_agreed_total: hasAgreedTotal(booking) };
 }
 
 function isNightTime(time) {
@@ -91,13 +99,16 @@ function calculatePrice(data) {
 
   const night = outboundNight + returnNight;
 
-  const total = (isRoundTrip ? base * 2 : base) + night;
+  const suitcases = Number(data.luggage || 0);
+  const vehicleSurcharge = totalPeople >= 1 && totalPeople <= 2 && suitcases >= 4 && suitcases <= 8 ? 5 : 0;
+  const total = (isRoundTrip ? base * 2 : base) + night + vehicleSurcharge;
 
   return {
     base,
     outboundNight,
     returnNight,
     night,
+    vehicleSurcharge,
     total
   };
 }
@@ -175,7 +186,7 @@ function buildEmailData(booking) {
     terminal: booking.terminal || "",
     notes: booking.notes || "",
 
-    price_base: booking.original_price ? `${booking.original_price}€` : "0€",
+    price_base: formatBookingBasePrice(booking),
     price_outbound_night: `${outboundNight}€`,
     price_return_night: `${returnNight}€`,
     price_night: `${totalNight}€`,
@@ -310,6 +321,11 @@ router.post("/modify", ...emailRateLimits(), validateEmailInput("customer_email"
       vehicle_type: mergedBooking.vehicle_type, luggage: mergedBooking.luggage });
     if (capacityIssue) return res.status(400).json({ success: false, ...capacityIssue });
 
+    if (!isSupportedService(mergedBooking.service_type) &&
+        !(booking.service_type === "other" && mergedBooking.service_type === "other")) {
+      return res.status(400).json({ success: false, message: "Unsupported service type. Please contact us for a custom quote." });
+    }
+
     const editableFields = ["service_type", "trip_type", "booking_date", "booking_time",
       "return_date", "return_time", "pickup_location", "destination", "vehicle_type",
       "passengers", "children", "luggage", "baby_seats", "child_seats", "flight_number", "terminal", "notes"];
@@ -321,7 +337,24 @@ router.post("/modify", ...emailRateLimits(), validateEmailInput("customer_email"
       return res.json({ success: true, message: "Booking details are unchanged.", booking: customerBookingView(booking) });
     }
 
-    const price = calculatePrice(mergedBooking);
+    const pricingFields = ["service_type", "trip_type", "booking_time", "return_time", "passengers", "children", "luggage"];
+    const fareChanged = pricingFields.some(field =>
+      ["booking_time", "return_time"].includes(field)
+        ? normalizeTime(mergedBooking[field]) !== normalizeTime(booking[field])
+        : String(mergedBooking[field] ?? "") !== String(booking[field] ?? ""));
+    // Keep agreed administrator totals and unchanged historical fares intact.
+    const preserveAgreedFare = hasAgreedTotal(booking) || !fareChanged;
+    const price = preserveAgreedFare ? {
+      base: Number(booking.original_price || 0), total: Number(booking.price || 0),
+      vehicleSurcharge: Number(booking.luggage_vehicle_surcharge) === 5 ? 5 : 0,
+      outboundNight: Number(booking.outbound_night_surcharge || 0),
+      returnNight: Number(booking.return_night_surcharge || 0),
+      night: Number(booking.night_surcharge || 0)
+    } : calculatePrice(mergedBooking);
+    if (!preserveAgreedFare && price.vehicleSurcharge && req.body.pricing_version !== "van-luggage-v1") {
+      return res.status(409).json({ success: false, code: "PRICE_REFRESH_REQUIRED",
+        message: "Please refresh the booking page to review the extra luggage vehicle surcharge before changing this booking." });
+    }
 
     const updateData = {
       service_type: mergedBooking.service_type || null,
@@ -350,6 +383,10 @@ router.post("/modify", ...emailRateLimits(), validateEmailInput("customer_email"
       notes: mergedBooking.notes || null,
 
       original_price: price.base,
+      luggage_vehicle_surcharge: preserveAgreedFare ? booking.luggage_vehicle_surcharge ?? null : price.vehicleSurcharge,
+      outbound_night_surcharge: price.outboundNight,
+      return_night_surcharge: price.returnNight,
+      night_surcharge: price.night,
       price: price.total,
 
       status: "modified",

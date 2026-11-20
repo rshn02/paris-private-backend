@@ -1,3 +1,4 @@
+import { formatBookingBasePrice, storedBookingPricing } from "../utils/pricing.js";
 import { bookingCapacityIssue, validateBookingCapacity, displayBookingVehicle, CHILD_SEAT_POLICY } from "../utils/bookingCapacity.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { emailRateLimits, preventDuplicateEmails } from "../middleware/emailProtection.js";
@@ -39,6 +40,7 @@ router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res
       return res.json({
         success: true,
         already_confirmed: true,
+        pricing: storedBookingPricing(booking),
         booking_number: booking.booking_number
       });
     }
@@ -182,7 +184,7 @@ router.post("/", ...emailRateLimits(), preventDuplicateEmails(), async (req, res
       terminal: updatedBooking.terminal || "",
       notes: updatedBooking.notes || "",
 
-      price_base: `${basePrice}€`,
+      price_base: formatBookingBasePrice(updatedBooking),
       price_outbound_night: `${outboundNight}€`,
       price_return_night: `${returnNight}€`,
       price_night: `${nightTotal}€`,
@@ -229,7 +231,8 @@ await sendEmail("confirm-admin", {
 
     return res.json({
       success: true,
-      booking_number: updatedBooking.booking_number
+      booking_number: updatedBooking.booking_number,
+      pricing: storedBookingPricing(updatedBooking)
     });
     });
 

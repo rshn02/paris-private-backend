@@ -21,12 +21,12 @@ function backend(){
  const supabase={auth:{getUser:async token=>token==='compat-admin-token'?{data:{user:{id:'compat-admin'}}}:{error:{message:'Invalid token'}}},from(table){let record;return{
   insert(data){record={id:inserts.length+1,...data};inserts.push({table,data:record});return this;},select(){return this;},single:async()=>({data:record}),update(){return this;},eq(){return this;},then(resolve){return Promise.resolve({error:null}).then(resolve);}
  };}};
- const bindings={express,console:{log(){},error(){}},process:{env},supabase,phone,...crypto,rateLimit};
+ const bindings={...load('utils/pricing.js',{},['formatBookingBasePrice','storedBookingPricing']),express,console:{log(){},error(){}},process:{env},supabase,phone,...crypto,rateLimit};
  for(const [file,names]of[
   ['utils/bookingCapacity.js',['bookingCapacityIssue','validateBookingCapacity','displayBookingVehicle','CHILD_SEAT_POLICY']],
   ['middleware/phoneValidation.js',['validatePhoneInput']],['middleware/emailValidation.js',['validateEmailInput']],
   ['middleware/emailProtection.js',['emailRateLimits','preventDuplicateEmails']],['middleware/validation.js',['validateBookingData']],
-  ['middleware/requireAdmin.js',['requireAdmin']],['utils/pricing.js',['calculateBookingPrice','calculatePublicBookingPrice','calculateAdminFinalPrice','isSupportedService']]
+  ['middleware/requireAdmin.js',['requireAdmin']],['utils/pricing.js',['formatBookingBasePrice','storedBookingPricing','calculateBookingPrice','calculatePublicBookingPrice','calculateAdminFinalPrice','isSupportedService']]
  ])Object.assign(bindings,load(file,bindings,names));
  Object.assign(bindings,{FROM_EMAIL:'booking@example.test',REPLY_TO:'admin@example.test',sendEmail:async(...args)=>{emails.push(args);return{id:'fake-email'};},generateReference:async()=>'COMPAT-TEST',generateToken:()=> 'compat-confirm-token',
   syncBookingCalendarEvents:async booking=>{calendar.push(booking);return{outboundEventId:null,returnEventId:null};},sanitizeMarketingAttribution:()=>null,cleanMarketingService:()=>'',formatInternalMarketingAttribution:()=>''});
@@ -37,6 +37,19 @@ function backend(){
  app.use(express.static(front));
  return{app,emails,inserts,calendar};
 }
+test('all fare grids agree across frontend, creation and modification calculators',()=>{
+ const client=vm.runInNewContext(fs.readFileSync(path.join(front,'js/pricing.js'),'utf8')+';({calculatePrice,PRICING})');
+ const server=load('utils/pricing.js',{},['calculateBookingPrice']);
+ const manageSource=fs.readFileSync(path.join(root,'routes/manage.js'),'utf8').split('function buildEmailData')[0].replace(/^import\s+[\s\S]*?;\s*$/gm,'');
+ const manage=vm.runInNewContext(manageSource+';({calculatePrice})',{express:{Router:()=>({})}});
+ let cases=0;
+ for(const service of Object.keys(client.PRICING))for(let people=1;people<=8;people++)for(let bags=0;bags<=8;bags++)for(const roundtrip of [false,true])for(const night of [false,true]){
+  const data={service_type:service,passengers:people===2?1:people,children:people===2?1:0,luggage:bags,trip_type:roundtrip?'round_trip':'one_way',booking_time:night?'23:00':'12:00',return_time:night?'05:00':'14:00'};
+  const a=server.calculateBookingPrice(data),b=client.calculatePrice({...data,service,time:data.booking_time}),c=manage.calculatePrice(data);
+  for(const key of ['base','night','vehicleSurcharge','total']){assert.equal(b[key],a[key],service+' frontend '+key);assert.equal(c[key],a[key],service+' modify '+key);}cases++;
+ }
+ console.log('PASS '+cases+' fare combinations: backend create, backend modify and frontend shared calculator');
+});
 test('phone release preserves SEO metadata, structured data and payment markup',()=>{
  for(const name of ['contact','reservation']){
   const previous=fs.readFileSync(path.join(__dirname,'fixtures',`phone-legacy-${name}.html`),'utf8');
@@ -94,7 +107,7 @@ test('cached/current HTML and scripts submit to real backend routes using simula
    else{
     if(kind==='admin')await page.locator('#adminPanel').waitFor({state:'visible'});
     for(const [id,value]of [['name','Compatibility Test'],['email','client@example.test'],['pickup','CDG'],['destination','Paris'],['date','2027-12-01'],['time','12:00']])await page.locator('#'+id).fill(value);
-    await page.locator('#service').selectOption('cdg-paris');await page.locator('#passengers').selectOption('2');await page.locator('#luggage').selectOption({index:1});await page.locator('#vehicle-type').selectOption({index:1});await page.locator('#cgv').check();
+    await page.locator('#service').selectOption('cdg-paris');await page.locator('#passengers').selectOption('2');await page.locator('#luggage').selectOption({index:1});if(await page.locator('#vehicle-type').isVisible())await page.locator('#vehicle-type').selectOption({index:1});else assert.equal(await page.locator('#vehicle-type').inputValue(),'Premium Sedan');await page.locator('#cgv').check();
     if(generation==='current')await page.locator('input[name="payment"][value="Card to driver"]').check();
     if(kind==='admin'){await page.locator('#adminCustomPrice').fill('150');await page.evaluate(()=>applyAdminPrice());}
    }

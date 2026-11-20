@@ -26,7 +26,7 @@ const protection = load('middleware/emailProtection.js', {...crypto, rateLimit},
 const { normalizeTime } = load("utils/normalizeTime.js", {}, ["normalizeTime"]);
 const quiet = {log(){},error(){}};
 const unusedContact = {name:'John Doe',email:'john@example.com',phone:'+44 7400 123456',subject:'quote',message:'Please send a quote.',website:''};
-const validBooking = {customer_phone:'+12025550123',customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
+const validBooking = {pricing_version:"van-luggage-v1",customer_phone:'+12025550123',customer_name:'John Doe',customer_email:'john@example.com',service_type:'cdg-paris',pickup_location:'CDG',destination:'Paris',booking_date:'2026-12-01',booking_time:'12:00'};
 function fixture(route, options={}) {
   const calls=[], logs=[], calendarCalls=[];
   let updates=0, inserts=0;
@@ -55,7 +55,7 @@ function fixture(route, options={}) {
     return query;
   }};
   const originalValidation=load('middleware/validation.js',{},['validateBookingData']);
-  const bindings={...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
+  const bindings={...load('utils/pricing.js',{},['formatBookingBasePrice','storedBookingPricing']),...load("utils/bookingCapacity.js",{},["bookingCapacityIssue","validateBookingCapacity","displayBookingVehicle","CHILD_SEAT_POLICY"]),...phoneValidation,express,normalizeTime,console:quiet,...validation,...protection,...originalValidation,sendEmail,supabase,
     FROM_EMAIL:'Company <booking@example.com>',REPLY_TO:'company@gmail.com',
     process:{env:{ADMIN_EMAIL:'admin@example.com',CLIENT_URL:'https://example.com',RESEND_TEMPLATE_CONTACT:'contact-template',RESEND_TEMPLATE_PENDING:'pending-template',RESEND_TEMPLATE_CONFIRMED:'confirmed-template',RESEND_TEMPLATE_MODIFIED:'modified-template',RESEND_TEMPLATE_CANCELLED:'cancelled-template'}},
     sanitizeMarketingAttribution:()=>null,cleanMarketingService:()=>'',formatInternalMarketingAttribution:()=>'',
@@ -102,7 +102,7 @@ for(const [adults,children,babySeats,childSeats] of [[1,0,0,0],[6,2,1,1],[1,7,2,
  const f=fixture('booking');await serve(t,f,async post=>{
   const r=await post({...validBooking,passengers:adults,children,vehicle_type:van,baby_seats:babySeats,child_seats:childSeats,luggage:5});assert.equal(r.status,200);
   assert.equal(f.booking.passengers+f.booking.children,adults+children);assert.equal(f.booking.baby_seats,babySeats);assert.equal(f.booking.child_seats,childSeats);assert.equal(f.booking.luggage,5);
-  assert.equal(f.booking.price,adults+children===8?130:80);
+  assert.equal(f.booking.price,adults+children===8?130:85);
  });
 });
 for(const value of [-1,0,1.5,null,true,{},[],[8],'','1e0','0x8','NaN','Infinity','8x',Number.MAX_SAFE_INTEGER])for(const route of ['booking','manage'])test(route+' rejects manipulated adults '+JSON.stringify(value),async t=>{
